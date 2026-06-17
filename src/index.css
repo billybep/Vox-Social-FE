@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #06021c;
+    color: #ffffff;
+    overflow-x: hidden;
+  }
+
+  /* Kustomisasi scrollbar modern */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: #06021c; }
+  ::-webkit-scrollbar-thumb { background: #191046; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #ff7b1a; }
+}
+
+@layer utilities {
+  .solid-glassmorphic {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .cyber-grid-bg {
+    background-size: 40px 40px;
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  }
+}
