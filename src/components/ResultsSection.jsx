@@ -18,7 +18,7 @@ export default function ResultsSection({ results, url, platform, setView }) {
         return 'text-rose-400 bg-rose-400/10 border-rose-400/20';
     };
 
-    const bookingUrl = `https://voxlumedia.com/booking/?wpf14=${results.recommended_package || 'growth_audit'}`;
+    const bookingUrl = `https://voxlumedia.com/home/book-meeting`;
 
     return (
         <div className="min-h-screen bg-[#06021c] text-white w-full relative z-20 pb-20">
