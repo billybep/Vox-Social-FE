@@ -5,7 +5,7 @@ import ResultsSection from './components/ResultsSection';
 import { playSynthTick } from './utils/audio';
 
 function App() {
-    const [view, setView] = useState('landing'); 
+    const [view, setView] = useState('landing');
     const [profileUrl, setProfileUrl] = useState('');
     const [inputError, setInputError] = useState('');
     const [analyzingStep, setAnalyzingStep] = useState(0);
@@ -70,7 +70,7 @@ function App() {
 
         playSynthTick(1000, 'sine', 0.2, 0.06);
         setView('loading');
-        
+
         try {
             // Integration with Go Backend running on port 8080 or Railway production URL
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
@@ -87,13 +87,13 @@ function App() {
             }
 
             const data = await response.json();
-            
+
             const mappedData = {
                 score: data.overall_score || 0,
                 label: data.status || 'Unknown',
                 profileIdentity: data.profile_identity || '',
                 growthPotential: data.growth_potential || '',
-                summary: data.profile_identity || '', 
+                summary: data.profile_identity || '',
                 categories: {
                     businessReadiness: data.profile_readiness || 0,
                     profileClarity: data.overall_score || 0,
@@ -104,55 +104,17 @@ function App() {
                 opportunities: data.opportunities || [],
                 recommended_package: data.recommended_package || 'growth_audit'
             };
-            
+
             setTimeout(() => {
                 setAnalysisResults(mappedData);
                 setView('results');
             }, 1500);
 
         } catch (error) {
-            console.error("Backend fetch failed, using fallback simulated data:", error);
-            const platform = detectPlatform(url);
-            const hash = url.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-            const score = 68 + (hash % 24); 
-            
-            const fallbackData = {
-                businessName: platform === 'Instagram' ? "Your Instagram Business Profile" : "Your Facebook Business Page",
-                profileIdentity: `This profile belongs to a growing commercial brand evaluated on ${platform}.`,
-                score: score,
-                label: score >= 90 ? "Excellent" : score >= 80 ? "Very Good" : score >= 70 ? "Good" : "Fair",
-                summary: "Your profile has a solid foundation. Focusing on clear calls-to-action will immediately boost trust and conversions.",
-                strengths: [
-                    "✓ Visual identity looks consistent and professional",
-                    "✓ Core products are cleanly presented in posts",
-                    "✓ Contact options are accessible to visitors"
-                ],
-                opportunities: [
-                    "• Primary call-to-action is not prominent enough",
-                    "• Bio description misses a clear values hook",
-                    "• Reply rate and engagement features can be optimized"
-                ],
-                recommendations: [
-                    "Simplify your bio so visitors understand your exact service in under 5 seconds.",
-                    "Add a prominent booking link directly in your primary button area.",
-                    "Highlight high-quality customer reviews in your pinned content."
-                ],
-                categories: {
-                    profileClarity: 70 + (hash % 20),
-                    contentQuality: 65 + ((hash + 2) % 25),
-                    trustScore: 60 + ((hash + 4) % 30),
-                    customerEngagement: 55 + ((hash + 6) % 35),
-                    businessReadiness: 50 + ((hash + 8) % 40)
-                },
-                growthPotential: score > 80 ? "High" : "Moderate",
-                dataCoverage: 85 + (hash % 12),
-                recommended_package: 'growth_audit'
-            };
-
-            setTimeout(() => {
-                setAnalysisResults(fallbackData);
-                setView('results');
-            }, 1500);
+            console.error("Backend fetch failed:", error);
+            playSynthTick(150, 'sawtooth', 0.2, 0.08);
+            setInputError(`Backend connection failed. Please check if your API URL is correctly configured. Error: ${error.message}`);
+            setView('landing');
         }
     };
 
@@ -160,10 +122,10 @@ function App() {
         <div className="min-h-screen flex flex-col font-sans bg-[#06021c] text-white relative">
             <main className="flex-grow flex flex-col relative z-10">
                 {view === 'landing' && (
-                    <LandingSection 
-                        profileUrl={profileUrl} 
-                        setProfileUrl={setProfileUrl} 
-                        handleAnalyze={handleAnalyze} 
+                    <LandingSection
+                        profileUrl={profileUrl}
+                        setProfileUrl={setProfileUrl}
+                        handleAnalyze={handleAnalyze}
                         inputError={inputError}
                         setInputError={setInputError}
                     />
@@ -174,8 +136,8 @@ function App() {
                 )}
 
                 {view === 'results' && analysisResults && (
-                    <ResultsSection 
-                        results={analysisResults} 
+                    <ResultsSection
+                        results={analysisResults}
                         url={profileUrl}
                         platform={detectPlatform(profileUrl)}
                         setView={setView}
