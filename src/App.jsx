@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import LandingSection from './components/LandingSection';
 import LoadingSection from './components/LoadingSection';
 import ResultsSection from './components/ResultsSection';
+import ContactGateSection from './components/ContactGateSection';
 import { playSynthTick } from './utils/audio';
 
 function App() {
@@ -10,6 +11,11 @@ function App() {
     const [inputError, setInputError] = useState('');
     const [analyzingStep, setAnalyzingStep] = useState(0);
     const [analysisResults, setAnalysisResults] = useState(null);
+    
+    const [isAiComplete, setIsAiComplete] = useState(false);
+    const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+    const [leadData, setLeadData] = useState(null);
+    const [webhookStatus, setWebhookStatus] = useState('idle');
 
     const analysisSteps = [
         "Establishing secure connection to public nodes...",
@@ -69,7 +75,14 @@ function App() {
         }
 
         playSynthTick(1000, 'sine', 0.2, 0.06);
-        setView('loading');
+        
+        setAnalysisResults(null);
+        setIsAiComplete(false);
+        setIsFormSubmitted(false);
+        setLeadData(null);
+        setWebhookStatus('idle');
+        
+        setView('contact_gate');
 
         try {
             // Integration with Go Backend running on port 8080 or Railway production URL
@@ -105,10 +118,8 @@ function App() {
                 recommended_package: data.recommended_package || 'growth_audit'
             };
 
-            setTimeout(() => {
-                setAnalysisResults(mappedData);
-                setView('results');
-            }, 1500);
+            setAnalysisResults(mappedData);
+            setIsAiComplete(true);
 
         } catch (error) {
             console.error("Backend fetch failed:", error);
@@ -117,6 +128,34 @@ function App() {
             setView('landing');
         }
     };
+
+    const handleContactSubmit = (formData) => {
+        setLeadData(formData);
+        setIsFormSubmitted(true);
+    };
+
+    useEffect(() => {
+        if (isFormSubmitted && webhookStatus === 'idle') {
+            if (isAiComplete) {
+                const sendWebhook = async () => {
+                    setWebhookStatus('sending');
+                    setView('loading');
+                    
+                    try {
+                        // TODO: Dummy GHL webhook integration
+                        console.log("Sending payload to GHL:", { leadData, analysisResults });
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                    } finally {
+                        setWebhookStatus('complete');
+                        setView('results');
+                    }
+                };
+                sendWebhook();
+            } else {
+                setView('loading');
+            }
+        }
+    }, [isFormSubmitted, isAiComplete, webhookStatus, leadData, analysisResults]);
 
     return (
         <div className="min-h-screen flex flex-col font-sans bg-[#06021c] text-white relative">
@@ -129,6 +168,10 @@ function App() {
                         inputError={inputError}
                         setInputError={setInputError}
                     />
+                )}
+
+                {view === 'contact_gate' && (
+                    <ContactGateSection onSubmit={handleContactSubmit} />
                 )}
 
                 {view === 'loading' && (

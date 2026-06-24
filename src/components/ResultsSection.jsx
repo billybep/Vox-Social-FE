@@ -174,6 +174,26 @@ export default function ResultsSection({ results, url, platform, setView }) {
                     </div>
                 </div>
 
+                {/* Recommended Package */}
+                <div className="solid-glassmorphic rounded-[2rem] border border-[#ff7b1a]/30 p-8 sm:p-10 shadow-[0_0_30px_rgba(255,123,26,0.15)] relative overflow-hidden mt-8 mb-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                        <div>
+                            <span className="text-[10px] font-black tracking-widest text-[#ff7b1a] uppercase mb-2 block">AI Recommendation</span>
+                            <h3 className="text-2xl font-black text-white mb-2">Recommended Solution</h3>
+                            <p className="text-white/70 font-medium max-w-lg">
+                                Based on your score and profile metrics, our AI engine highly recommends the 
+                                <span className="text-[#ff7b1a] font-bold"> {results.recommended_package || 'Vox Value'} </span> 
+                                to optimize your growth.
+                            </p>
+                        </div>
+                        <div className="flex-shrink-0 w-full md:w-auto">
+                            <div className="bg-[#ff7b1a]/10 border border-[#ff7b1a]/20 text-[#ff7b1a] px-6 py-4 rounded-xl font-black text-xl text-center shadow-inner">
+                                {results.recommended_package || 'Vox Value'}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Lead Capture form */}
                 {/* <div className="solid-glassmorphic rounded-[2rem] border border-white/10 p-8 sm:p-12 shadow-2xl text-center relative overflow-hidden">
                     {!leadSubmitted ? (
@@ -216,6 +236,28 @@ export default function ResultsSection({ results, url, platform, setView }) {
                         </div>
                     )}
                 </div> */}
+                {/* Final CTA */}
+                <div className="solid-glassmorphic rounded-[2rem] border border-white/10 p-8 sm:p-12 shadow-2xl text-center relative overflow-hidden mt-12 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+                    <div className="relative z-10 max-w-2xl mx-auto space-y-6">
+                        <div className="w-16 h-16 bg-white/5 border border-white/10 text-[#ff7b1a] rounded-full flex items-center justify-center mx-auto text-2xl mb-2">
+                            <i className="fa-regular fa-calendar-check"></i>
+                        </div>
+                        <h3 className="text-2xl sm:text-3xl font-black text-white">
+                            Ready to Turn That Score Into More Leads?
+                        </h3>
+                        <p className="text-white/70 font-medium text-lg">
+                            Discuss your audit results and map out an action plan with our growth experts.
+                        </p>
+                        <div className="pt-4">
+                            <button
+                                onClick={() => window.open(bookingUrl, '_blank')}
+                                className="bg-[#ff7b1a] hover:bg-[#e06200] text-white font-black px-8 py-4 rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(255,123,26,0.3)] text-lg hover:scale-[1.02] active:scale-95"
+                            >
+                                Book a free 15-minute call &rarr;
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 {/* Copyright Footer */}
                 <div className="mt-8 text-center text-xs text-white/40 font-semibold tracking-wide select-none">
