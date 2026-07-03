@@ -3,6 +3,7 @@ import LandingSection from './components/LandingSection';
 import LoadingSection from './components/LoadingSection';
 import ResultsSection from './components/ResultsSection';
 import ContactGateSection from './components/ContactGateSection';
+import SeoAuditSection from './components/SeoAuditSection';
 import { playSynthTick } from './utils/audio';
 
 function App() {
@@ -192,7 +193,12 @@ function App() {
                         handleAnalyze={handleAnalyze}
                         inputError={inputError}
                         setInputError={setInputError}
+                        setView={setView}
                     />
+                )}
+
+                {view === 'seo_audit' && (
+                    <SeoAuditSection setView={setView} />
                 )}
 
                 {view === 'contact_gate' && (
