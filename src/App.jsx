@@ -4,15 +4,16 @@ import LoadingSection from './components/LoadingSection';
 import ResultsSection from './components/ResultsSection';
 import ContactGateSection from './components/ContactGateSection';
 import SeoAuditSection from './components/SeoAuditSection';
+import AuthLogin from './components/AuthLogin';
 import { playSynthTick } from './utils/audio';
 
 function App() {
-    const [view, setView] = useState('landing');
+    const [view, setView] = useState('login');
     const [profileUrl, setProfileUrl] = useState('');
     const [inputError, setInputError] = useState('');
     const [analyzingStep, setAnalyzingStep] = useState(0);
     const [analysisResults, setAnalysisResults] = useState(null);
-    
+
     const [isAiComplete, setIsAiComplete] = useState(false);
     const [isFormSubmitted, setIsFormSubmitted] = useState(false);
     const [leadData, setLeadData] = useState(null);
@@ -76,19 +77,19 @@ function App() {
         }
 
         playSynthTick(1000, 'sine', 0.2, 0.06);
-        
+
         setAnalysisResults(null);
         setIsAiComplete(false);
         setIsFormSubmitted(false);
         setLeadData(null);
         setWebhookStatus('idle');
-        
+
         setView('contact_gate');
 
         try {
             // Integration with Go Backend running on port 8080 or Railway production URL
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-            const response = await fetch(`${apiUrl}/api/v1/analyze`, {
+            const response = await fetch(`${apiUrl}/analyze`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -141,10 +142,10 @@ function App() {
                 const sendWebhook = async () => {
                     setWebhookStatus('sending');
                     setView('loading');
-                    
+
                     try {
                         const platform = profileUrl.includes('instagram.com') ? 'Instagram' : (profileUrl.includes('facebook.com') ? 'Facebook' : 'Unknown');
-                        
+
                         // Construct the GHL Webhook Payload as per MASTER BRIEF (Funnel 2 - Social Score Standalone)
                         const ghlPayload = {
                             firstName: leadData.firstName,
@@ -186,6 +187,10 @@ function App() {
     return (
         <div className="min-h-screen flex flex-col font-sans bg-[#06021c] text-white relative">
             <main className="flex-grow flex flex-col relative z-10">
+                {view === 'login' && (
+                    <AuthLogin setView={setView} />
+                )}
+
                 {view === 'landing' && (
                     <LandingSection
                         profileUrl={profileUrl}

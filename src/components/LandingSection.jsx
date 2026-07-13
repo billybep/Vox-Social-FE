@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { signOut } from 'firebase/auth';
+import { auth } from '../utils/firebase';
 import { playSynthTick } from '../utils/audio';
+import LogoutModal from './LogoutModal';
 
 const MASCOT_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/ryanvox.png";
 const LOGO_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/vsllogo.png";
@@ -8,6 +11,7 @@ export default function LandingSection({ profileUrl, setProfileUrl, handleAnalyz
     const mascotRef = useRef(null);
     const [mascotBubbleText, setMascotBubbleText] = useState("Hey there! Ready to grade your profile?");
     const [bubbleClickCount, setBubbleClickCount] = useState(0);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     const neuralNodes = {
         bioScan: true,
@@ -78,7 +82,7 @@ export default function LandingSection({ profileUrl, setProfileUrl, handleAnalyz
                     VOXLUMEDIA
                 </div>
                 <div className="flex items-center gap-3 sm:gap-4">
-                    <button 
+                    <button
                         onClick={() => {
                             playSynthTick(600, 'sine', 0.05, 0.05);
                             setView('seo_audit');
@@ -91,8 +95,30 @@ export default function LandingSection({ profileUrl, setProfileUrl, handleAnalyz
                     <a href="https://voxlumedia.com" target="_blank" rel="noopener noreferrer" className="bg-[#191046] border border-white/10 rounded-full px-5 py-2.5 text-xs sm:text-sm font-extrabold hover:bg-white hover:text-black transition-all active:scale-95 duration-200">
                         Book Free Consultation &rarr;
                     </a>
+                    <button
+                        onClick={() => setShowLogoutModal(true)}
+                        className="flex items-center justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-4 sm:py-2.5 rounded-full border border-white/10 bg-white/5 hover:bg-rose-500/10 hover:border-rose-500/30 hover:text-rose-400 text-white/70 transition-all active:scale-95"
+                        title="Logout"
+                    >
+                        <i className="fa-solid fa-arrow-right-from-bracket text-[13px] sm:mr-2"></i>
+                        <span className="hidden sm:inline text-xs font-bold">Logout</span>
+                    </button>
                 </div>
             </header>
+
+            <LogoutModal
+                isOpen={showLogoutModal}
+                onCancel={() => setShowLogoutModal(false)}
+                onConfirm={async () => {
+                    try {
+                        await signOut(auth);
+                        localStorage.removeItem('auth_token');
+                        setView('login');
+                    } catch (error) {
+                        console.error('Logout error:', error);
+                    }
+                }}
+            />
 
             <div className="flex-grow flex items-center justify-center w-full pt-32 pb-16 relative z-10">
                 <div className="w-full max-w-[1400px] mx-auto px-6 sm:px-12 grid grid-cols-1 lg:grid-cols-12 items-center gap-12 lg:gap-4">
