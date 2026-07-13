@@ -3,15 +3,17 @@ import LandingSection from './components/LandingSection';
 import LoadingSection from './components/LoadingSection';
 import ResultsSection from './components/ResultsSection';
 import ContactGateSection from './components/ContactGateSection';
+import SeoAuditSection from './components/SeoAuditSection';
+import AuthLogin from './components/AuthLogin';
 import { playSynthTick } from './utils/audio';
 
 function App() {
-    const [view, setView] = useState('landing');
+    const [view, setView] = useState('login');
     const [profileUrl, setProfileUrl] = useState('');
     const [inputError, setInputError] = useState('');
     const [analyzingStep, setAnalyzingStep] = useState(0);
     const [analysisResults, setAnalysisResults] = useState(null);
-    
+
     const [isAiComplete, setIsAiComplete] = useState(false);
     const [isFormSubmitted, setIsFormSubmitted] = useState(false);
     const [leadData, setLeadData] = useState(null);
@@ -75,19 +77,19 @@ function App() {
         }
 
         playSynthTick(1000, 'sine', 0.2, 0.06);
-        
+
         setAnalysisResults(null);
         setIsAiComplete(false);
         setIsFormSubmitted(false);
         setLeadData(null);
         setWebhookStatus('idle');
-        
+
         setView('contact_gate');
 
         try {
             // Integration with Go Backend running on port 8080 or Railway production URL
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-            const response = await fetch(`${apiUrl}/api/v1/analyze`, {
+            const response = await fetch(`${apiUrl}/analyze`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -140,11 +142,36 @@ function App() {
                 const sendWebhook = async () => {
                     setWebhookStatus('sending');
                     setView('loading');
-                    
+
                     try {
-                        // TODO: Dummy GHL webhook integration
-                        console.log("Sending payload to GHL:", { leadData, analysisResults });
+                        const platform = profileUrl.includes('instagram.com') ? 'Instagram' : (profileUrl.includes('facebook.com') ? 'Facebook' : 'Unknown');
+
+                        // Construct the GHL Webhook Payload as per MASTER BRIEF (Funnel 2 - Social Score Standalone)
+                        const ghlPayload = {
+                            firstName: leadData.firstName,
+                            lastName: leadData.lastName,
+                            companyName: leadData.businessName, // Maps to GHL companyName
+                            email: leadData.email,
+                            phone: leadData.phone,
+                            funnel_entry_point: "Social Score Tool",
+                            lead_source_tool: "Social Score Tool",
+                            date_of_audit: new Date().toISOString(),
+                            social_profile_url: profileUrl,
+                            platform_audited: platform,
+                            social_score_overall: analysisResults.score,
+                            social_score_status: analysisResults.label,
+                            social_profile_readiness: analysisResults.categories?.businessReadiness || 0,
+                            social_growth_potential: analysisResults.growthPotential,
+                            social_profile_identity: analysisResults.profileIdentity,
+                            social_key_strengths: Array.isArray(analysisResults.strengths) ? analysisResults.strengths.join(", ") : "",
+                            social_opportunities: Array.isArray(analysisResults.opportunities) ? analysisResults.opportunities.join(", ") : "",
+                            social_recommended_package: analysisResults.recommended_package
+                        };
+
+                        console.log("Sending payload to GHL (Simulated):", ghlPayload);
                         await new Promise(resolve => setTimeout(resolve, 2000));
+                    } catch (error) {
+                        console.error("GHL webhook integration failed:", error);
                     } finally {
                         setWebhookStatus('complete');
                         setView('results');
@@ -155,11 +182,15 @@ function App() {
                 setView('loading');
             }
         }
-    }, [isFormSubmitted, isAiComplete, webhookStatus, leadData, analysisResults]);
+    }, [isFormSubmitted, isAiComplete, webhookStatus, leadData, analysisResults, profileUrl]);
 
     return (
         <div className="min-h-screen flex flex-col font-sans bg-[#06021c] text-white relative">
             <main className="flex-grow flex flex-col relative z-10">
+                {view === 'login' && (
+                    <AuthLogin setView={setView} />
+                )}
+
                 {view === 'landing' && (
                     <LandingSection
                         profileUrl={profileUrl}
@@ -167,7 +198,12 @@ function App() {
                         handleAnalyze={handleAnalyze}
                         inputError={inputError}
                         setInputError={setInputError}
+                        setView={setView}
                     />
+                )}
+
+                {view === 'seo_audit' && (
+                    <SeoAuditSection setView={setView} />
                 )}
 
                 {view === 'contact_gate' && (
