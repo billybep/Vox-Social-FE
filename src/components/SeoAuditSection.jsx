@@ -361,31 +361,25 @@ export default function SeoAuditSection({ setView }) {
             </div>
 
             {/* Header (Not printed) */}
-            <header className="absolute top-0 left-0 w-full p-6 sm:px-12 z-50 flex items-center justify-between no-print">
-                <div
-                    onClick={() => {
-                        playSynthTick(600, 'sine', 0.05, 0.05);
-                        setView('landing');
-                    }}
-                    className="flex items-center gap-3 font-black text-xl tracking-tight text-white select-none cursor-pointer hover:opacity-85 transition-opacity"
-                >
+            <header className="absolute top-0 left-0 w-full p-4 sm:p-6 sm:px-12 z-50 flex items-center justify-between no-print">
+                <div className="flex items-center gap-3 font-black text-xl tracking-tight text-white select-none">
                     <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
                         <img src={LOGO_URL} className="w-full h-full object-contain" alt="Logo" />
                     </div>
-                    VOXLUMEDIA
+                    <span className="hidden sm:block">VOXLUMEDIA</span>
                 </div>
-                <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-4">
                     <button
                         onClick={() => {
                             playSynthTick(600, 'sine', 0.05, 0.05);
                             setView('landing');
                         }}
-                        className="relative group overflow-hidden bg-gradient-to-r from-[#ff7b1a] to-amber-500 hover:from-[#e06200] hover:to-amber-400 text-white rounded-full px-5 py-2.5 text-xs sm:text-sm font-black shadow-[0_0_15px_rgba(255,123,26,0.3)] hover:shadow-[0_0_25px_rgba(255,123,26,0.6)] hover:scale-[1.03] transition-all active:scale-95 duration-200 flex items-center gap-1.5"
+                        className="relative group overflow-hidden bg-gradient-to-r from-[#ff7b1a] to-amber-500 hover:from-[#e06200] hover:to-amber-400 text-white rounded-full px-4 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-sm font-black shadow-[0_0_15px_rgba(255,123,26,0.3)] hover:shadow-[0_0_25px_rgba(255,123,26,0.6)] hover:scale-[1.03] transition-all active:scale-95 duration-200 flex items-center gap-1.5 whitespace-nowrap"
                     >
-                        <i className="fa-solid fa-arrow-left text-xs"></i>
-                        Vox Social Score
+                        <i className="fa-solid fa-arrow-left text-[10px] sm:text-xs"></i>
+                        <span>Vox Social Score</span>
                     </button>
-                    <a href="https://voxlumedia.com" target="_blank" rel="noopener noreferrer" className="bg-[#191046] border border-white/10 rounded-full px-5 py-2.5 text-xs sm:text-sm font-extrabold hover:bg-white hover:text-black transition-all active:scale-95 duration-200">
+                    <a href="https://voxlumedia.com" target="_blank" rel="noopener noreferrer" className="hidden md:flex bg-[#191046] border border-white/10 rounded-full px-5 py-2.5 text-xs sm:text-sm font-extrabold hover:bg-white hover:text-black transition-all active:scale-95 duration-200 whitespace-nowrap">
                         Book Free Consultation &rarr;
                     </a>
                     <button
