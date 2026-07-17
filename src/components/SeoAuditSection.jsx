@@ -14,6 +14,9 @@ export default function SeoAuditSection({ setView }) {
     const [businessName, setBusinessName] = useState('');
     const [targetKeyword, setTargetKeyword] = useState('');
     const [targetLocation, setTargetLocation] = useState('');
+    const [businessAddress, setBusinessAddress] = useState('');
+    const [phone, setPhone] = useState('');
+    const [gbpUrl, setGbpUrl] = useState('');
     const [charCount, setCharCount] = useState(0);
     const [error, setError] = useState('');
 
@@ -25,6 +28,8 @@ export default function SeoAuditSection({ setView }) {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     // View state
+    const [isGateLocked, setIsGateLocked] = useState(false);
+    const [webhookStatus, setWebhookStatus] = useState('idle');
     const [showResults, setShowResults] = useState(false);
     const [resultsDomain, setResultsDomain] = useState('');
     const [auditData, setAuditData] = useState(null);
@@ -95,11 +100,50 @@ export default function SeoAuditSection({ setView }) {
             return;
         }
 
+        playSynthTick(880, 'sine', 0.1, 0.2);
+        setIsGateLocked(true);
+    };
+
+    const handleUnlockSubmit = async (e) => {
+        if (e) e.preventDefault();
+        setError('');
+
+        if (!businessName.trim() || !targetKeyword.trim() || !targetLocation.trim() || !businessAddress.trim() || !phone.trim()) {
+            return; // required fields
+        }
+
+        // Send to GHL Webhook (simulated for now)
+        const sendWebhook = async () => {
+            setWebhookStatus('sending');
+            try {
+                const ghlPayload = {
+                    businessName: businessName.trim(),
+                    targetKeyword: targetKeyword.trim(),
+                    targetLocation: targetLocation.trim(),
+                    businessAddress: businessAddress.trim(),
+                    phone: phone.trim(),
+                    gbpUrl: gbpUrl.trim(),
+                    domain: domain.trim(),
+                    funnel_entry_point: "SEO Audit Tool"
+                };
+                console.log("Sending payload to GHL (Simulated):", ghlPayload);
+                await new Promise(resolve => setTimeout(resolve, 800));
+            } catch (err) {
+                console.error("GHL webhook failed", err);
+            } finally {
+                setWebhookStatus('complete');
+            }
+        };
+        sendWebhook();
+
+        setIsGateLocked(false);
         setIsScanning(true);
         setScanProgress(0);
         setAuditData(null);
         playSynthTick(880, 'sine', 0.1, 0.2);
 
+        const val = domain.trim();
+        
         // Animate progress to 95% while waiting for API
         let currentProgress = 0;
         let resolved = false;
@@ -407,6 +451,101 @@ export default function SeoAuditSection({ setView }) {
                 }}
             />
 
+            {/* SEO GATE FORM OVERLAY */}
+            {isGateLocked && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#07041a]/85 backdrop-blur-xl p-4 sm:p-6 overflow-y-auto animate-fade-in">
+                    <div className="w-full max-w-2xl bg-[#0b072c] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden my-auto">
+                        
+                        {/* Background glowing effects for the modal */}
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-[#ff7b1a]/20 blur-[80px] pointer-events-none"></div>
+
+                        <div className="text-center mb-8 relative z-10">
+                            <div className="w-16 h-16 mx-auto bg-gradient-to-br from-[#ff7b1a] to-amber-500 rounded-2xl flex items-center justify-center shadow-lg mb-4 animate-pulse-glow">
+                                <i className="fa-solid fa-lock text-white text-2xl"></i>
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">Unlock Your Full SEO Audit</h2>
+                            <p className="text-white/60 text-sm">We are analyzing <strong className="text-white">{domain}</strong> in the background. Tell us a bit about this business so we can customize your results and save it to your CRM.</p>
+                        </div>
+
+                        <form onSubmit={handleUnlockSubmit} className="relative z-10 space-y-4 text-left">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] uppercase font-bold text-white/60 tracking-wider pl-1">Business Name *</label>
+                                    <div className="relative">
+                                        <i className="fa-solid fa-building absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                                        <input type="text" required value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="e.g. Voxlumedia" className="w-full bg-white/5 border border-white/10 rounded-xl text-white text-sm pl-10 pr-4 py-3 focus:outline-none focus:border-[#ff7b1a]/50 focus:bg-white/10 transition-all placeholder-white/20" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] uppercase font-bold text-white/60 tracking-wider pl-1">Target Service / Keyword *</label>
+                                    <div className="relative">
+                                        <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                                        <input type="text" required value={targetKeyword} onChange={(e) => setTargetKeyword(e.target.value)} placeholder="e.g. SEO Agency" className="w-full bg-white/5 border border-white/10 rounded-xl text-white text-sm pl-10 pr-4 py-3 focus:outline-none focus:border-[#ff7b1a]/50 focus:bg-white/10 transition-all placeholder-white/20" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] uppercase font-bold text-white/60 tracking-wider pl-1">Target City / Area *</label>
+                                    <div className="relative">
+                                        <i className="fa-solid fa-location-dot absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                                        <input type="text" required value={targetLocation} onChange={(e) => setTargetLocation(e.target.value)} placeholder="e.g. New York, NY" className="w-full bg-white/5 border border-white/10 rounded-xl text-white text-sm pl-10 pr-4 py-3 focus:outline-none focus:border-[#ff7b1a]/50 focus:bg-white/10 transition-all placeholder-white/20" />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[11px] uppercase font-bold text-white/60 tracking-wider pl-1">Phone / NAP Phone *</label>
+                                    <div className="relative">
+                                        <i className="fa-solid fa-phone absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                                        <input type="tel" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" className="w-full bg-white/5 border border-white/10 rounded-xl text-white text-sm pl-10 pr-4 py-3 focus:outline-none focus:border-[#ff7b1a]/50 focus:bg-white/10 transition-all placeholder-white/20" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] uppercase font-bold text-white/60 tracking-wider pl-1">Business Address / NAP Address *</label>
+                                <div className="relative">
+                                    <i className="fa-solid fa-map-pin absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                                    <input type="text" required value={businessAddress} onChange={(e) => setBusinessAddress(e.target.value)} placeholder="123 Main St, Suite 100, City, State, ZIP" className="w-full bg-white/5 border border-white/10 rounded-xl text-white text-sm pl-10 pr-4 py-3 focus:outline-none focus:border-[#ff7b1a]/50 focus:bg-white/10 transition-all placeholder-white/20" />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] uppercase font-bold text-white/60 tracking-wider pl-1">Google Business Profile / Maps URL *</label>
+                                <div className="relative">
+                                    <i className="fa-brands fa-google absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm"></i>
+                                    <input type="url" required value={gbpUrl} onChange={(e) => setGbpUrl(e.target.value)} placeholder="https://goo.gl/maps/..." className="w-full bg-white/5 border border-white/10 rounded-xl text-white text-sm pl-10 pr-4 py-3 focus:outline-none focus:border-[#ff7b1a]/50 focus:bg-white/10 transition-all placeholder-white/20" />
+                                </div>
+                            </div>
+
+                            <div className="pt-6">
+                                <button
+                                    type="submit"
+                                    disabled={webhookStatus === 'sending'}
+                                    className="w-full relative group overflow-hidden bg-gradient-to-r from-[#ff7b1a] to-amber-500 hover:from-[#e06200] hover:to-amber-400 text-white rounded-xl px-6 py-4 text-sm font-black shadow-[0_0_20px_rgba(255,123,26,0.3)] hover:shadow-[0_0_30px_rgba(255,123,26,0.5)] transition-all active:scale-[0.98] duration-200 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                                >
+                                    {webhookStatus === 'sending' ? (
+                                        <>
+                                            <i className="fa-solid fa-circle-notch fa-spin text-lg"></i>
+                                            <span>Unlocking & Sending Data...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>Unlock Audit Result</span>
+                                            <i className="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                        </>
+                                    )}
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsGateLocked(false)} 
+                                    className="w-full mt-4 text-white/40 hover:text-white/80 text-xs font-semibold transition-colors"
+                                >
+                                    Cancel & Return
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* View Switching logic */}
             {!showResults ? (
                 /* ==========================================================================
@@ -523,39 +662,7 @@ export default function SeoAuditSection({ setView }) {
                                 {/* Advanced Settings Fields */}
                                 {showAdvanced && (
                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 animate-fade-in-up mt-3">
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] uppercase font-bold text-white/60 tracking-wider pl-1">Business Name</label>
-                                            <input
-                                                type="text"
-                                                value={businessName}
-                                                onChange={(e) => setBusinessName(e.target.value)}
-                                                placeholder="e.g. Voxlumedia"
-                                                disabled={isScanning}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg text-white text-sm px-3 py-2 focus:outline-none focus:border-[#a882ff]/50 transition-colors placeholder-white/30"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] uppercase font-bold text-white/60 tracking-wider pl-1">Target Keyword</label>
-                                            <input
-                                                type="text"
-                                                value={targetKeyword}
-                                                onChange={(e) => setTargetKeyword(e.target.value)}
-                                                placeholder="e.g. SEO Agency"
-                                                disabled={isScanning}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg text-white text-sm px-3 py-2 focus:outline-none focus:border-[#a882ff]/50 transition-colors placeholder-white/30"
-                                            />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <label className="text-[10px] uppercase font-bold text-white/60 tracking-wider pl-1">Target Location</label>
-                                            <input
-                                                type="text"
-                                                value={targetLocation}
-                                                onChange={(e) => setTargetLocation(e.target.value)}
-                                                placeholder="e.g. New York, NY"
-                                                disabled={isScanning}
-                                                className="w-full bg-white/5 border border-white/10 rounded-lg text-white text-sm px-3 py-2 focus:outline-none focus:border-[#a882ff]/50 transition-colors placeholder-white/30"
-                                            />
-                                        </div>
+                                        {/* Old Advanced Settings fields removed because they are now in the lock screen form */}
                                     </div>
                                 )}
 
