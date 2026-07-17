@@ -119,28 +119,31 @@ export default function AuthLogin({ setView }) {
 
                     <div className="relative z-10 flex items-center gap-3">
                         <img src={LOGO_URL} alt="Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
-                        <span className="text-white font-black text-2xl tracking-tight">VOXLUMEDIA</span>
+                        <div className="flex flex-col">
+                            <span className="text-white font-black text-2xl tracking-tight leading-none">VOXAUDIT</span>
+                            <span className="text-white/50 text-[10px] font-bold tracking-widest uppercase mt-1">by Voxlumedia</span>
+                        </div>
                     </div>
 
                     <div className="relative z-10 flex-grow flex flex-col justify-center mt-12">
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 w-max mb-6">
                             <span className="w-2 h-2 rounded-full bg-[#00E676] animate-pulse"></span>
-                            <span className="text-xs font-bold text-white/80 uppercase tracking-widest">AI-Powered Audit</span>
+                            <span className="text-xs font-bold text-white/80 uppercase tracking-widest">AI-POWERED SEO AUDIT</span>
                         </div>
                         <h1 className="text-5xl font-black text-white leading-tight mb-6 drop-shadow-lg">
-                            Analyze. <br /> Optimize. <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00E676] to-[#00C853]">Dominate.</span>
+                            Audit. <br /> Optimize. <br />
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00E676] to-[#00C853]">Rank Higher.</span>
                         </h1>
                         <p className="text-white/60 text-lg font-medium max-w-sm leading-relaxed">
-                            Join thousands of creators and businesses using VoxSocial to unlock their profile's true growth potential.
+                            Run an AI-powered SEO audit to uncover technical issues, improve search visibility, and receive actionable recommendations to help your website rank higher.
                         </p>
                     </div>
 
-                    {/* Simple Tagline */}
+                    {/* Bottom Feature */}
                     <div className="relative z-10 mt-auto">
-                        <div className="flex items-center gap-2 text-white/40 text-sm font-medium">
-                            <i className="fa-solid fa-bolt text-[#00E676]/70 text-xs"></i>
-                            <span>Advanced Profile Insights</span>
+                        <div className="flex items-center gap-2 text-white/40 text-[11px] sm:text-xs font-semibold tracking-wide">
+                            <span className="text-[#00E676]">⚡</span>
+                            <span>Technical SEO • Core Web Vitals • Performance Analysis</span>
                         </div>
                     </div>
                 </div>
@@ -151,10 +154,10 @@ export default function AuthLogin({ setView }) {
                     {/* Header Section for Mobile (since left side is hidden) */}
                     <div className="flex flex-col items-center mb-10 lg:items-start lg:text-left">
                         <div className="w-16 h-16 rounded-2xl overflow-hidden flex items-center justify-center mb-6 bg-white/5 border border-white/10 shadow-lg lg:hidden">
-                            <img src={LOGO_URL} className="w-10 h-10 object-contain" alt="VoxSocial Logo" />
+                            <img src={LOGO_URL} className="w-10 h-10 object-contain" alt="VoxAudit Logo" />
                         </div>
                         <h2 className="text-3xl font-black text-white tracking-tight mb-2">Welcome Back</h2>
-                        <p className="text-sm font-semibold text-white/50">Sign in to continue to VoxSocial & VoxSEO Audit</p>
+                        <p className="text-sm font-semibold text-white/50">Sign in to access your SEO audits and website reports.</p>
                     </div>
 
                     <div className="w-full max-w-sm mx-auto lg:mx-0">
