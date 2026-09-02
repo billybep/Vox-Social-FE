@@ -84,7 +84,7 @@ function App() {
         setLeadData(null);
         setWebhookStatus('idle');
 
-        setView('contact_gate');
+        setView('loading');
 
         try {
             // Integration with Go Backend running on port 8080 or Railway production URL
@@ -122,6 +122,7 @@ function App() {
 
             setAnalysisResults(mappedData);
             setIsAiComplete(true);
+            setView('results');
 
         } catch (error) {
             console.error("Backend fetch failed:", error);
@@ -168,8 +169,21 @@ function App() {
                             social_recommended_package: analysisResults.recommended_package
                         };
 
-                        console.log("Sending payload to GHL (Simulated):", ghlPayload);
-                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        console.log("Sending payload to Go Backend for GHL Forwarding:", ghlPayload);
+                        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+                        const response = await fetch(`${apiUrl}/ghl/forward`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(ghlPayload)
+                        });
+
+                        if (!response.ok) {
+                            console.error("Backend responded with an error for GHL forward");
+                        } else {
+                            console.log("Successfully forwarded to GHL via Backend!");
+                        }
                     } catch (error) {
                         console.error("GHL webhook integration failed:", error);
                     } finally {

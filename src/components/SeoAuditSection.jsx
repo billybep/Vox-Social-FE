@@ -82,7 +82,7 @@ export default function SeoAuditSection({ setView }) {
         playSynthTick(1300, 'sine', 0.02, 0.05);
     };
 
-    // Audit scanning pipeline — calls real backend
+    // Audit scanning pipeline — calls real backend directly without gate form
     const handleAuditSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -100,50 +100,12 @@ export default function SeoAuditSection({ setView }) {
             return;
         }
 
-        playSynthTick(880, 'sine', 0.1, 0.2);
-        setIsGateLocked(true);
-    };
-
-    const handleUnlockSubmit = async (e) => {
-        if (e) e.preventDefault();
-        setError('');
-
-        if (!businessName.trim() || !targetKeyword.trim() || !targetLocation.trim() || !businessAddress.trim() || !phone.trim()) {
-            return; // required fields
-        }
-
-        // Send to GHL Webhook (simulated for now)
-        const sendWebhook = async () => {
-            setWebhookStatus('sending');
-            try {
-                const ghlPayload = {
-                    businessName: businessName.trim(),
-                    targetKeyword: targetKeyword.trim(),
-                    targetLocation: targetLocation.trim(),
-                    businessAddress: businessAddress.trim(),
-                    phone: phone.trim(),
-                    gbpUrl: gbpUrl.trim(),
-                    domain: domain.trim(),
-                    funnel_entry_point: "SEO Audit Tool"
-                };
-                console.log("Sending payload to GHL (Simulated):", ghlPayload);
-                await new Promise(resolve => setTimeout(resolve, 800));
-            } catch (err) {
-                console.error("GHL webhook failed", err);
-            } finally {
-                setWebhookStatus('complete');
-            }
-        };
-        sendWebhook();
-
         setIsGateLocked(false);
         setIsScanning(true);
         setScanProgress(0);
         setAuditData(null);
         playSynthTick(880, 'sine', 0.1, 0.2);
 
-        const val = domain.trim();
-        
         // Animate progress to 95% while waiting for API
         let currentProgress = 0;
         let resolved = false;
@@ -163,9 +125,9 @@ export default function SeoAuditSection({ setView }) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     domain: cleanDomain,
-                    business_name: businessName.trim(),
-                    target_keyword: targetKeyword.trim(),
-                    target_location: targetLocation.trim(),
+                    business_name: businessName ? businessName.trim() : '',
+                    target_keyword: targetKeyword ? targetKeyword.trim() : '',
+                    target_location: targetLocation ? targetLocation.trim() : '',
                 }),
             });
             const data = await resp.json();
@@ -193,6 +155,11 @@ export default function SeoAuditSection({ setView }) {
             setError('Audit failed: ' + (err.message || 'Unknown error. Please try again.'));
             playSynthTick(160, 'sawtooth', 0.25, 0.15);
         }
+    };
+
+    const handleUnlockSubmit = async (e) => {
+        if (e) e.preventDefault();
+        handleAuditSubmit(e);
     };
 
     // Return back to scan input view
@@ -455,7 +422,7 @@ export default function SeoAuditSection({ setView }) {
             {isGateLocked && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#07041a]/85 backdrop-blur-xl p-4 sm:p-6 overflow-y-auto animate-fade-in">
                     <div className="w-full max-w-2xl bg-[#0b072c] border border-white/10 rounded-3xl p-6 sm:p-10 shadow-[0_0_50px_rgba(0,0,0,0.5)] relative overflow-hidden my-auto">
-                        
+
                         {/* Background glowing effects for the modal */}
                         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[80%] h-32 bg-[#ff7b1a]/20 blur-[80px] pointer-events-none"></div>
 
@@ -498,7 +465,7 @@ export default function SeoAuditSection({ setView }) {
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div className="space-y-1.5">
                                 <label className="text-[11px] uppercase font-bold text-white/60 tracking-wider pl-1">Business Address / NAP Address *</label>
                                 <div className="relative">
@@ -533,9 +500,9 @@ export default function SeoAuditSection({ setView }) {
                                         </>
                                     )}
                                 </button>
-                                <button 
-                                    type="button" 
-                                    onClick={() => setIsGateLocked(false)} 
+                                <button
+                                    type="button"
+                                    onClick={() => setIsGateLocked(false)}
                                     className="w-full mt-4 text-white/40 hover:text-white/80 text-xs font-semibold transition-colors"
                                 >
                                     Cancel & Return
