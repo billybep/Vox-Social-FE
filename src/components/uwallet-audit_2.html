@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UWallet — Digital Presence Audit | Voxlumedia</title>
+<style>
+  :root{
+    --surface-1:#fcfcfb; --plane:#f4f4f1; --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --hair:rgba(11,11,11,.10);
+    --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a;
+    --navy:#0f1b2d; --navy-2:#16263f;
+    --radius:14px;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --arab:"Noto Naskh Arabic","Segoe UI",Tahoma,"Arial",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--plane);color:var(--ink);font-family:var(--sans);
+       font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  [dir="rtl"]{font-family:var(--arab);line-height:1.95}
+  .wrap{max-width:940px;margin:0 auto;padding:0 22px}
+
+  /* ---------- top bar ---------- */
+  .topbar{position:sticky;top:0;z-index:50;background:rgba(15,27,45,.97);
+          backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.08)}
+  .topbar .wrap{display:flex;align-items:center;justify-content:space-between;
+                gap:16px;padding-top:11px;padding-bottom:11px}
+  .brand{display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;
+         letter-spacing:.16em;font-size:12.5px;text-transform:uppercase}
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--s2);flex:none}
+  .langsw{display:flex;background:rgba(255,255,255,.10);border-radius:999px;padding:3px;gap:2px}
+  .langsw button{border:0;background:transparent;color:rgba(255,255,255,.72);
+     font:inherit;font-size:13px;font-weight:600;padding:6px 17px;border-radius:999px;cursor:pointer}
+  .langsw button[aria-pressed="true"]{background:#fff;color:var(--navy)}
+  .langsw button:focus-visible{outline:2px solid var(--s2);outline-offset:2px}
+
+  /* ---------- hero ---------- */
+  .hero{background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 100%);color:#fff;
+        padding:52px 0 46px}
+  .eyebrow{font-size:11.5px;letter-spacing:.19em;text-transform:uppercase;
+           color:var(--s2);font-weight:700;margin:0 0 16px}
+  [dir="rtl"] .eyebrow{letter-spacing:0}
+  .hero h1{font-size:clamp(29px,5.1vw,45px);line-height:1.16;margin:0 0 16px;
+           font-weight:800;letter-spacing:-.02em;max-width:19ch}
+  [dir="rtl"] .hero h1{letter-spacing:0;line-height:1.42;max-width:24ch}
+  .hero .lede{font-size:17.5px;color:rgba(255,255,255,.80);margin:0;max-width:62ch}
+  .meta{margin-top:26px;padding-top:20px;border-top:1px solid rgba(255,255,255,.14);
+        display:flex;flex-wrap:wrap;gap:8px 30px;font-size:13px;color:rgba(255,255,255,.62)}
+  .meta b{color:#fff;font-weight:600}
+
+  /* ---------- grade band ---------- */
+  .gradeband{background:var(--surface-1);border-bottom:1px solid var(--hair)}
+  .gradegrid{display:grid;grid-template-columns:auto 1fr;gap:30px;align-items:center;padding:30px 0}
+  .gradebox{text-align:center;padding:16px 26px;border-radius:var(--radius);
+            background:var(--plane);border:1px solid var(--hair);min-width:140px}
+  .gradebox .g{font-size:56px;font-weight:800;line-height:1;color:var(--serious);letter-spacing:-.03em}
+  .gradebox .n{font-size:15px;color:var(--ink-2);margin-top:7px;font-weight:600}
+  .gradebox .l{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+               color:var(--muted);margin-top:9px;font-weight:700}
+  [dir="rtl"] .gradebox .l{letter-spacing:0}
+  .checkrow{display:flex;flex-wrap:wrap;gap:10px}
+  .chk{flex:1 1 130px;background:var(--plane);border:1px solid var(--hair);
+       border-radius:11px;padding:13px 15px}
+  .chk .v{font-size:25px;font-weight:800;line-height:1.1;letter-spacing:-.02em}
+  .chk .k{font-size:12.5px;color:var(--ink-2);margin-top:3px;font-weight:500}
+  .chk.pass .v{color:var(--good)} .chk.warn .v{color:var(--serious)} .chk.fail .v{color:var(--crit)}
+
+  /* ---------- sections ---------- */
+  section{padding:46px 0;border-bottom:1px solid var(--hair);background:var(--surface-1)}
+  section:nth-of-type(even){background:var(--plane)}
+  .kicker{font-size:11.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--s1);
+          font-weight:700;margin:0 0 11px}
+  [dir="rtl"] .kicker{letter-spacing:0}
+  h2{font-size:clamp(23px,3.5vw,31px);line-height:1.24;margin:0 0 14px;
+     font-weight:800;letter-spacing:-.018em}
+  [dir="rtl"] h2{letter-spacing:0;line-height:1.5}
+  h3{font-size:18px;margin:0 0 8px;font-weight:700;letter-spacing:-.01em}
+  [dir="rtl"] h3{letter-spacing:0}
+  p{margin:0 0 15px;color:var(--ink-2)}
+  .intro{font-size:17.5px;color:var(--ink);max-width:68ch}
+  strong{color:var(--ink);font-weight:700}
+
+  /* ---------- scorecard chart ---------- */
+  .fig{background:var(--surface-1);border:1px solid var(--hair);border-radius:var(--radius);
+       padding:24px;margin:26px 0}
+  section:nth-of-type(even) .fig{background:#fff}
+  .figttl{font-size:15.5px;font-weight:700;margin:0 0 3px}
+  .figsub{font-size:13px;color:var(--muted);margin:0 0 20px}
+  .bars{display:flex;flex-direction:column;gap:9px}
+  .bar{display:grid;grid-template-columns:130px 1fr 126px;align-items:center;gap:13px;
+       padding:3px 5px;border-radius:8px;transition:background .13s}
+  .bar:hover{background:var(--plane)}
+  .bar .lbl{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .track{height:15px;background:var(--grid);border-radius:4px;overflow:hidden}
+  .fill{height:100%;border-radius:4px;display:block}
+  .bar .val{font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink-2);
+            display:flex;align-items:center;gap:6px;font-weight:600;white-space:nowrap}
+  .sdot{width:8px;height:8px;border-radius:50%;flex:none}
+  [dir="rtl"] .bar{grid-template-columns:130px 1fr 126px}
+  [dir="rtl"] .bar .lbl,[dir="rtl"] .bar .val{font-size:14px}
+  .legend{display:flex;flex-wrap:wrap;gap:7px 18px;margin-top:19px;padding-top:15px;
+          border-top:1px solid var(--grid);font-size:12.5px;color:var(--ink-2)}
+  .legend span{display:flex;align-items:center;gap:7px}
+
+  /* ---------- findings ---------- */
+  .finding{background:var(--surface-1);border:1px solid var(--hair);border-radius:var(--radius);
+           padding:24px 26px;margin-bottom:15px;position:relative;overflow:hidden}
+  section:nth-of-type(even) .finding{background:#fff}
+  .finding::before{content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:4px}
+  .finding.crit::before{background:var(--crit)}
+  .finding.ser::before{background:var(--serious)}
+  .finding.wrn::before{background:var(--warn)}
+  .fhead{display:flex;align-items:flex-start;gap:13px;margin-bottom:11px;flex-wrap:wrap}
+  .badge{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:800;
+         padding:4px 10px;border-radius:5px;white-space:nowrap;flex:none;margin-top:3px}
+  [dir="rtl"] .badge{letter-spacing:0}
+  .badge.crit{background:#fbeaea;color:#a52424} .badge.ser{background:#fdefe8;color:#a24d24}
+  .badge.wrn{background:#fdf5e2;color:#8a6100}
+  .fnum{font-size:12px;color:var(--muted);font-weight:700;margin-top:5px}
+  .stat{display:flex;flex-wrap:wrap;gap:11px;margin:16px 0 4px}
+  .stat div{background:var(--plane);border:1px solid var(--hair);border-radius:9px;
+            padding:11px 15px;flex:1 1 145px}
+  section:nth-of-type(even) .stat div{background:var(--plane)}
+  .stat b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.25}
+  .stat span{font-size:12px;color:var(--muted);display:block;margin-top:2px}
+  .so{background:#f0f6fd;border:1px solid #cde2fb;border-radius:10px;padding:14px 17px;margin-top:16px}
+  .so .t{font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;font-weight:800;
+         color:var(--s1);margin-bottom:5px}
+  [dir="rtl"] .so .t{letter-spacing:0}
+  .so p{margin:0;font-size:14.5px;color:#123a63}
+
+  /* ---------- grouped bar chart ---------- */
+  .gbars{display:flex;flex-direction:column;gap:20px}
+  .grp .gname{font-size:13.5px;font-weight:700;margin-bottom:9px}
+  .grow{display:grid;grid-template-columns:104px 1fr;align-items:center;gap:12px;margin-bottom:6px}
+  .grow .who{font-size:12.5px;color:var(--ink-2);font-weight:600}
+  .gbarwrap{display:flex;align-items:center;gap:9px}
+  .gbar{height:19px;border-radius:4px}
+  .gbar.a{background:var(--s1)} .gbar.b{background:var(--s2)}
+  .gval{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  /* ---------- tiles ---------- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:12px;margin:24px 0}
+  .tile{background:var(--surface-1);border:1px solid var(--hair);border-radius:12px;padding:19px}
+  section:nth-of-type(even) .tile{background:#fff}
+  .tile b{display:block;font-size:29px;font-weight:800;letter-spacing:-.025em;line-height:1.1;color:var(--s1)}
+  .tile .lab{font-size:13px;color:var(--ink-2);margin-top:6px;font-weight:600}
+  .tile .src{font-size:11px;color:var(--muted);margin-top:6px}
+
+  /* ---------- roadmap ---------- */
+  .phase{background:var(--surface-1);border:1px solid var(--hair);border-radius:var(--radius);
+         padding:23px 25px;margin-bottom:13px}
+  section:nth-of-type(even) .phase{background:#fff}
+  .ptag{display:inline-block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+        font-weight:800;color:#fff;background:var(--navy);padding:4px 11px;border-radius:5px;margin-bottom:11px}
+  [dir="rtl"] .ptag{letter-spacing:0}
+  ul{margin:0 0 4px;padding-inline-start:20px;color:var(--ink-2)}
+  li{margin-bottom:7px}
+  .target{margin-top:14px;padding-top:13px;border-top:1px dashed var(--axis);
+          font-size:14px;color:var(--ink);font-weight:600}
+
+  /* ---------- locked ---------- */
+  .locked{background:var(--navy);color:#fff;border-radius:var(--radius);padding:32px 30px;margin-top:24px}
+  .locked h3{color:#fff;font-size:20px}
+  .locked p{color:rgba(255,255,255,.74)}
+  .lockgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(228px,1fr));gap:12px;margin-top:20px}
+  .lockitem{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);
+            border-radius:11px;padding:16px 18px}
+  .lockitem .h{font-size:14.5px;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:8px}
+  .lockitem .d{font-size:13px;color:rgba(255,255,255,.66);line-height:1.55}
+  .lk{width:15px;height:15px;flex:none;opacity:.85}
+
+  /* ---------- table ---------- */
+  .tblwrap{overflow-x:auto;margin:22px 0;border:1px solid var(--hair);border-radius:12px;background:var(--surface-1)}
+  section:nth-of-type(even) .tblwrap{background:#fff}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:430px}
+  th,td{padding:11px 15px;text-align:start;border-bottom:1px solid var(--grid)}
+  th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;background:var(--plane)}
+  [dir="rtl"] th{letter-spacing:0}
+  tr:last-child td{border-bottom:0}
+  td.num{font-variant-numeric:tabular-nums;font-weight:600}
+
+  /* ---------- cta / footer ---------- */
+  .cta{background:linear-gradient(160deg,var(--navy) 0%,var(--navy-2) 100%);color:#fff;
+       padding:52px 0;border:0}
+  .cta h2{color:#fff} .cta p{color:rgba(255,255,255,.78)}
+  .ctabtn{display:inline-block;background:var(--s2);color:#fff;text-decoration:none;
+          font-weight:700;font-size:15.5px;padding:14px 30px;border-radius:9px;margin-top:8px}
+  footer{background:var(--navy);color:rgba(255,255,255,.5);padding:34px 0 44px;font-size:12.5px;border:0}
+  footer h4{color:rgba(255,255,255,.85);font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 11px}
+  [dir="rtl"] footer h4{letter-spacing:0}
+  footer a{color:rgba(255,255,255,.66)}
+  footer ul{color:rgba(255,255,255,.5);padding-inline-start:18px}
+  footer li{margin-bottom:5px}
+  .note{font-size:12.5px;color:var(--muted);font-style:italic;margin-top:14px}
+  [dir="rtl"] .note{font-style:normal}
+
+  [hidden]{display:none !important}
+  @media (max-width:640px){
+    .gradegrid{grid-template-columns:1fr;gap:20px}
+    .bar{grid-template-columns:92px 1fr 74px;gap:9px}
+    .bar .lbl{font-size:12.5px}
+    .grow{grid-template-columns:84px 1fr}
+  }
+  @media print{.topbar{display:none}section{break-inside:avoid}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <div class="brand"><span class="dot"></span><span>Voxlumedia</span></div>
+    <div class="langsw" role="group" aria-label="Language">
+      <button id="btn-en" aria-pressed="true" onclick="setLang('en')">English</button>
+      <button id="btn-ar" aria-pressed="false" onclick="setLang('ar')">العربية</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════ ENGLISH ══════════════════════════ -->
+<div id="en">
+
+<div class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Digital Presence Audit · Confidential</p>
+    <h1>You won the wallet. You haven't won the search bar.</h1>
+    <p class="lede">UWallet serves more than a million wallets and, as of its CEO’s last public
+      briefing, led Jordan on CliQ transaction volume. Its website scores <strong style="color:#fff">78 out of 100 — a grade C</strong>,
+      takes <strong style="color:#fff">23.5 seconds</strong> to render on mobile, and has no H1 tag
+      on its homepage. This is what a single free automated scan found. Here's what it means.</p>
+    <div class="meta">
+      <span>Prepared for <b>Dr. Alaa Ensheiwat, CEO, UWallet</b></span>
+      <span>By <b>Voxlumedia</b></span>
+      <span>Scan date <b>17 August 2026</b></span>
+      <span>Scope <b>200 pages · 5 sitemaps · 51 checks</b></span>
+    </div>
+  </div>
+</div>
+
+<div class="gradeband">
+  <div class="wrap">
+    <div class="gradegrid">
+      <div class="gradebox">
+        <div class="g">C</div>
+        <div class="n">78 / 100</div>
+        <div class="l">Overall</div>
+      </div>
+      <div class="checkrow">
+        <div class="chk pass"><div class="v">30</div><div class="k">Checks passed</div></div>
+        <div class="chk warn"><div class="v">18</div><div class="k">Warnings raised</div></div>
+        <div class="chk fail"><div class="v">3</div><div class="k">High-risk failures</div></div>
+        <div class="chk warn"><div class="v">115</div><div class="k">Thin pages of 200</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">The one-sentence version</p>
+    <h2>A million-wallet payments business is running on a website Google struggles to read.</h2>
+    <p class="intro">Nothing here is about your product. Your app has a million-plus installs and
+      your transaction volume speaks for itself. This audit is about the layer <em>in front</em> of
+      the product — the pages, signals and stories that decide whether a Jordanian who has never
+      heard of UWallet finds you, trusts you, and installs. On that layer, the gap between what
+      UWallet <em>is</em> and what UWallet <em>looks like online</em> is the widest we've measured
+      for a company of this size.</p>
+
+    <div class="fig">
+      <p class="figttl">Score by category</p>
+      <p class="figsub">VoxAudit scan of uwallet.jo — 17 August 2026. Higher is better.</p>
+      <div class="bars" id="scorebars-en"></div>
+      <div class="legend">
+        <span><i class="sdot" style="background:var(--good)"></i> Strong (85+)</span>
+        <span><i class="sdot" style="background:var(--warn)"></i> Needs work (70–84)</span>
+        <span><i class="sdot" style="background:var(--serious)"></i> Weak (55–69)</span>
+        <span><i class="sdot" style="background:var(--crit)"></i> Critical (under 55)</span>
+      </div>
+      <p class="note">Authority and Rankings returned no live data during this scan — the backlink
+        and SERP APIs were not connected. Their scores are provisional and excluded from the
+        analysis below. Measuring them properly is part of the full engagement.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">Findings</p>
+    <h2>Five things that are costing you customers right now</h2>
+
+    <div class="finding crit">
+      <div class="fhead">
+        <span class="badge crit">Critical</span>
+        <div><div class="fnum">FINDING 01</div><h3>Your mobile site takes 23.5 seconds to load</h3></div>
+      </div>
+      <p>Google's own threshold for "good" Largest Contentful Paint is 2.5 seconds. UWallet's mobile
+        homepage takes <strong>23.5 seconds</strong> — 9.4× over the limit. Desktop is 4.7 seconds,
+        still nearly double. The site carries 32 script tags and 20 separate stylesheets, and only
+        5 of 15 homepage images use lazy loading.</p>
+      <p>For a mobile-first wallet in a market where 94% of the population is online, this is the
+        single most expensive line in this report. Every visitor who bounces before the page paints
+        is a customer acquisition cost you already paid and did not collect on.</p>
+      <div class="stat">
+        <div><b style="color:var(--crit)">23.5s</b><span>Mobile LCP (target: 2.5s)</span></div>
+        <div><b style="color:var(--crit)">47/100</b><span>Mobile PageSpeed</span></div>
+        <div><b style="color:var(--crit)">49/100</b><span>Desktop PageSpeed</span></div>
+        <div><b style="color:var(--serious)">0.136</b><span>Desktop CLS (target: 0.1)</span></div>
+      </div>
+      <div class="so"><div class="t">How we'd fix it</div>
+        <p>Core Web Vitals remediation sprint: script and stylesheet consolidation, critical-CSS
+        inlining, image format conversion and full lazy-load coverage, server response tuning, and
+        third-party tag governance. Target: mobile LCP under 2.5s and PageSpeed above 80 within 30 days.</p></div>
+    </div>
+
+    <div class="finding crit">
+      <div class="fhead">
+        <span class="badge crit">Critical</span>
+        <div><div class="fnum">FINDING 02</div><h3>Both of your homepages are missing an H1 tag</h3></div>
+      </div>
+      <p>The H1 is the most basic signal a page gives a search engine about what a page is about.
+        Both of your entry points are missing it. <code>uwallet.jo/en/home/</code> has
+        <strong>zero H1 tags</strong>, 366 visible words and no H3 subheadings at all.
+        <code>uwallet.jo/</code> is also missing its H1, carries 352 words, and scored
+        <strong>71/100 — the lowest of all 100 pages we sampled</strong>. Six other pages have the
+        opposite problem: multiple H1s.</p>
+      <p>Your two most valuable pages are among your weakest — for a licensed payment service
+        provider with a consortium of six Jordanian banks behind it.</p>
+      <div class="stat">
+        <div><b style="color:var(--crit)">0</b><span>H1 tags on either homepage</span></div>
+        <div><b style="color:var(--serious)">366</b><span>Words on /en/home/</span></div>
+        <div><b style="color:var(--serious)">71/100</b><span>uwallet.jo/ — lowest of 100</span></div>
+        <div><b style="color:var(--serious)">6</b><span>Pages with multiple H1s</span></div>
+      </div>
+      <div class="so"><div class="t">How we'd fix it</div>
+        <p>Rebuild the homepage's semantic and content architecture around the terms Jordanians
+        actually search — in Arabic and English — with a single authoritative H1, a structured
+        H2/H3 hierarchy, and depth on the things that convert: fees, security, CBJ licensing,
+        supported banks, and the international transfer proposition.</p></div>
+    </div>
+
+    <div class="finding ser">
+      <div class="fhead">
+        <span class="badge ser">Serious</span>
+        <div><div class="fnum">FINDING 03</div><h3>115 of your 200 pages are too thin to rank</h3></div>
+      </div>
+      <p>Across the 200 pages discovered in your five sitemaps, <strong>115 carry fewer than 350
+        visible words</strong>. Seventeen have no meta description at all. Twenty share duplicate
+        descriptions and ten share duplicate titles — meaning Google is being asked to choose
+        between pages that look identical to it. Sixty-four of your 478 images have no alt text,
+        which is both a ranking signal and an accessibility gap.</p>
+      <p>Positively: every page has a canonical tag and schema markup. The foundation is there.
+        It's the content sitting on top of it that's missing.</p>
+      <div class="stat">
+        <div><b style="color:var(--serious)">115</b><span>Thin pages (&lt;350 words)</span></div>
+        <div><b style="color:var(--serious)">20</b><span>Duplicate meta descriptions</span></div>
+        <div><b style="color:var(--serious)">17</b><span>Missing meta descriptions</span></div>
+        <div><b style="color:var(--warn)">64</b><span>Images with no alt text</span></div>
+      </div>
+      <div class="so"><div class="t">How we'd fix it</div>
+        <p>A prioritised content program: cluster the 115 thin pages by commercial intent, kill or
+        merge the ones with no job, and rebuild the rest as genuine answer pages — fees, how-to
+        guides, merchant onboarding, security explainers — with unique titles and descriptions
+        across the full sitemap.</p></div>
+    </div>
+
+    <div class="finding ser">
+      <div class="fhead">
+        <span class="badge ser">Serious</span>
+        <div><div class="fnum">FINDING 04</div><h3>Your newsroom stopped in October 2023</h3></div>
+      </div>
+      <p>Your newsroom carries <strong>two posts</strong>. The most recent is dated
+        <strong>22 October 2023</strong>; the one before it is from December 2022. Meanwhile the
+        Mastercard partnership, the Network International tie-up, international transfers to IBAN,
+        iris-scan cash distribution, and UWallet becoming the first payment service provider in
+        Jordan to adopt electronic signatures with Tawqeey are all documented publicly.</p>
+      <p>That coverage exists — on Umniah's site, on Petra, on Zawya, on Khaberni. It does not
+        exist on yours. When a partner, a regulator, a journalist or an investor searches "UWallet"
+        and lands on your newsroom, the company looks like it stopped moving three years ago. It is
+        the cheapest credibility gap in this entire report to close, and the most damaging to leave open.</p>
+      <div class="so"><div class="t">How we'd fix it</div>
+        <p>Reactivate the newsroom as an owned-media asset: backfill the 2024–2026 announcements
+        that already exist in the public record, establish a bilingual publishing cadence, and add
+        Article and Organization schema so your announcements are eligible for rich results instead
+        of being outranked by third parties reporting your own news.</p></div>
+    </div>
+
+    <div class="finding wrn">
+      <div class="fhead">
+        <span class="badge wrn">Warning</span>
+        <div><div class="fnum">FINDING 05</div><h3>You are near-invisible as a local business entity</h3></div>
+      </div>
+      <p>The site has no Google Business Profile link and no embedded map. There is no clear street
+        address pattern anywhere on the homepage, and no LocalBusiness or FinancialService schema
+        type among the twelve schema types detected. A phone number is present (0788001400) but
+        without consistent name-address-phone data behind it.</p>
+      <p>Smaller issues that compound: of just 60 links sampled from the 565 discovered, two were
+        already broken — <strong>your own Facebook link</strong> (400) and, more expensively,
+        <strong>the Mastercard link on your World Mastercard page</strong> (404). There are also HTTP
+        asset references creating mixed-content risk on an HTTPS site, and a missing Referrer-Policy header. For a Central Bank–licensed institution,
+        security headers are a trust signal that partners and enterprise clients actually check.</p>
+      <div class="stat">
+        <div><b style="color:var(--warn)">0</b><span>GBP or map links on site</span></div>
+        <div><b style="color:var(--warn)">2</b><span>Broken of just 60 sampled</span></div>
+        <div><b style="color:var(--warn)">565</b><span>Links discovered, 505 untested</span></div>
+        <div><b style="color:var(--warn)">1</b><span>Missing security header</span></div>
+      </div>
+      <div class="so"><div class="t">How we'd fix it</div>
+        <p>Entity and citation program: claim and fully optimise the Google Business Profile, deploy
+        FinancialService and LocalBusiness schema, standardise NAP across every directory and social
+        property, test all 565 discovered links and repair every break, and close the mixed-content
+        and header gaps.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">The reputation layer</p>
+    <h2>Same install base as Zain Cash. A quarter of the reviews.</h2>
+    <p class="intro">The app store listing is the last page a prospective customer sees before they
+      decide to install. Both apps sit in the 1M+ download bracket. The difference is in what people
+      say when they get there.</p>
+
+    <div class="fig">
+      <p class="figttl">Android app store comparison</p>
+      <p class="figsub">Google Play, Jordan — retrieved 17 August 2026.</p>
+      <div class="gbars">
+        <div class="grp">
+          <div class="gname">Average rating (out of 5)</div>
+          <div class="grow"><span class="who">UWallet</span>
+            <div class="gbarwrap"><span class="gbar a" style="width:80%"></span><span class="gval">4.0 ★</span></div></div>
+          <div class="grow"><span class="who">Zain Cash</span>
+            <div class="gbarwrap"><span class="gbar b" style="width:92%"></span><span class="gval">4.6 ★</span></div></div>
+        </div>
+        <div class="grp">
+          <div class="gname">Number of ratings</div>
+          <div class="grow"><span class="who">UWallet</span>
+            <div class="gbarwrap"><span class="gbar a" style="width:24.6%"></span><span class="gval">15,100</span></div></div>
+          <div class="grow"><span class="who">Zain Cash</span>
+            <div class="gbarwrap"><span class="gbar b" style="width:100%"></span><span class="gval">61,300</span></div></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="sdot" style="background:var(--s1)"></i> UWallet</span>
+        <span><i class="sdot" style="background:var(--s2)"></i> Zain Cash</span>
+      </div>
+    </div>
+
+    <p>Zain Cash has collected <strong>4× the review volume</strong> at a rating 0.6 stars higher —
+      from a comparable install base. Rating is a ranking factor inside app store search, and it is
+      the first trust signal a new user reads. UWallet's recent negative reviews cluster around three
+      recurring themes: <strong>OTP codes arriving late, duplicate charges taking over a month to
+      refund, and support tickets going unanswered.</strong></p>
+    <p>Those are operational issues, not marketing ones — but the fact that they are the loudest
+      public signal about UWallet <em>is</em> a marketing problem, and it is fixable. Neither store shows any visible
+      review-response activity from UWallet.</p>
+    <div class="so"><div class="t">How we'd fix it</div>
+      <p>An always-on reputation program: structured response to every review in Arabic and English,
+      in-app prompts timed to successful transactions to lift the rating from the satisfied majority
+      who never review, and a monthly themes report routed back to your product and support teams so
+      the underlying causes get fixed, not just answered.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">Social</p>
+    <h2>Strong output. Under-converted.</h2>
+    <p class="intro">Social is one of only two areas where the scan returned a perfect score — Open
+      Graph tags, Twitter cards and profile links are all correctly implemented. The content itself
+      is consistent and on-brand. The gap is at the point where attention should become a wallet.</p>
+
+    <div class="tiles">
+      <div class="tile"><b>75<span style="font-size:16px;color:var(--muted)">/100</span></b>
+        <div class="lab">Instagram profile readiness</div><div class="src">VoxAudit social scan</div></div>
+      <div class="tile"><b style="color:var(--serious)">65</b><div class="lab">Profile clarity</div><div class="src">Growth potential: High</div></div>
+      <div class="tile"><b style="color:var(--serious)">65</b><div class="lab">Content quality</div><div class="src">Growth potential: High</div></div>
+      <div class="tile"><b style="color:var(--serious)">65</b><div class="lab">Trust signals</div><div class="src">Growth potential: High</div></div>
+    </div>
+
+    <p><strong>What's working:</strong> consistent, frequent posting across multiple formats; clear
+      and coherent fintech brand messaging; and a demonstrated ability to produce genuine outlier
+      posts that far outperform the baseline.</p>
+    <p><strong>What isn't:</strong> engagement — particularly comments — sits below what the reach
+      should produce. The outlier posts are not being reverse-engineered into a repeatable format.
+      And there is no DM or comment automation capturing the intent that the content generates,
+      which for a wallet is a direct, measurable lead channel.</p>
+    <div class="so"><div class="t">How we'd fix it</div>
+      <p>VoxGrowth social management: an engagement-first content model built around the formats
+      your own outliers proved, comment and DM automation that routes intent straight into wallet
+      activations, and a monthly performance loop tying social spend to registrations rather than
+      impressions.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">Market context</p>
+    <h2>Why this window is closing</h2>
+    <p class="intro">The Jordanian payments market is not standing still while the site is. The
+      numbers below are from JoPACC and the Central Bank of Jordan, and they describe a category
+      where the transfer use-case is being commoditised — and where differentiation is moving to
+      trust, discoverability and story.</p>
+
+    <div class="tiles">
+      <div class="tile"><b>2.59M</b><div class="lab">Mobile wallet users in Jordan</div><div class="src">JoPACC, end of 2024</div></div>
+      <div class="tile"><b>2.28M</b><div class="lab">CliQ users</div><div class="src">JoPACC, May 2026</div></div>
+      <div class="tile"><b>+178%</b><div class="lab">CliQ transaction volume growth</div><div class="src">2024 vs 2023</div></div>
+      <div class="tile"><b>~46%</b><div class="lab">Adults still largely outside digital payments</div><div class="src">JoPACC via Paymentology, 2024</div></div>
+    </div>
+
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>Indicator</th><th>Value</th><th>Period</th></tr></thead>
+        <tbody>
+          <tr><td>CliQ transactions</td><td class="num">94.05 million</td><td>Jan–May 2026</td></tr>
+          <tr><td>CliQ transfer value</td><td class="num">JD 9.73 billion</td><td>Jan–May 2026</td></tr>
+          <tr><td>All JoPACC transactions</td><td class="num">224.62 million <span style="color:var(--good)">(+77.2%)</span></td><td>2024</td></tr>
+          <tr><td>eFAWATEERcom transactions</td><td class="num">66.07 million <span style="color:var(--good)">(+25.6%)</span></td><td>2024</td></tr>
+          <tr><td>Adult financial inclusion</td><td class="num">62% <span style="color:var(--muted)">(from 47% in 2021)</span></td><td>2024</td></tr>
+          <tr><td>Internet penetration</td><td class="num">94%</td><td>2024</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Read together, these say one thing: <strong>instant bank-to-bank transfer is becoming free,
+      universal and boring.</strong> When the core transfer function stops being a reason to choose
+      a wallet, the wallet has to win on everything around it — the card, the international corridor,
+      the merchant network, the loyalty layer, the brand. Every one of those is communicated online.
+      Right now, UWallet is communicating them through a homepage with no H1 that takes 23.5 seconds
+      to appear.</p>
+    <p>The remaining 46% of Jordanian adults outside the digital payment system will not be reached
+      through a banking relationship they don't have. They will be reached through search, social,
+      app stores and word of mouth. Those are exactly the four surfaces this audit found weakest.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">The plan</p>
+    <h2>What we'd do, and in what order</h2>
+    <p class="intro">Ninety days, three phases, sequenced so that the highest-cost problem is fixed
+      first and every later phase compounds on a foundation that actually works.</p>
+
+    <div class="phase">
+      <span class="ptag">Phase 1 · Days 0–30</span>
+      <h3>Technical triage</h3>
+      <ul>
+        <li>Core Web Vitals remediation — script consolidation, critical CSS, image pipeline, caching and server response</li>
+        <li>Fix the missing homepage H1 and resolve the six multiple-H1 pages</li>
+        <li>Unique titles and meta descriptions across all 200 sitemap pages</li>
+        <li>Test all 565 discovered links — only 60 were sampled here — and repair every break</li>
+        <li>Close the mixed-content risk and add the missing Referrer-Policy header</li>
+        <li>Alt text across the 64 uncovered images</li>
+      </ul>
+      <div class="target">Target: mobile LCP under 2.5s · PageSpeed 47 → 80+ · zero high-risk failures</div>
+    </div>
+
+    <div class="phase">
+      <span class="ptag">Phase 2 · Days 30–60</span>
+      <h3>Entity, authority and story</h3>
+      <ul>
+        <li>Claim and fully build out the Google Business Profile; deploy FinancialService and LocalBusiness schema</li>
+        <li>NAP standardisation across Google, Bing, Apple Maps, Facebook and local Jordanian directories</li>
+        <li>Reactivate the newsroom — backfill 2024–2026 announcements, establish a bilingual cadence, add Article schema</li>
+        <li>Arabic and English URL architecture review, including the percent-encoded Arabic slugs currently in the sitemap</li>
+        <li>Backlink and domain authority baseline — the data this free scan could not retrieve</li>
+      </ul>
+      <div class="target">Target: complete entity footprint · newsroom current · authority baseline established</div>
+    </div>
+
+    <div class="phase">
+      <span class="ptag">Phase 3 · Days 60–90</span>
+      <h3>Demand capture and reputation</h3>
+      <ul>
+        <li>Rebuild or retire the 115 thin pages against real Arabic and English search demand</li>
+        <li>App store optimisation and an always-on review response and generation program on both stores</li>
+        <li>VoxGrowth social management — engagement-first content, DM and comment automation into wallet activation</li>
+        <li>Conversion tracking from organic, social and app store through to registration in GA4 and GTM</li>
+        <li>Monthly board-ready reporting tied to registrations, not impressions</li>
+      </ul>
+      <div class="target">Target: measurable organic and social contribution to wallet activations</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">What this scan couldn't see</p>
+    <h2>The three most important numbers are still missing</h2>
+    <p class="intro">This report is the free tier. It runs 51 automated checks across 200 pages
+      without touching your systems. It is deliberately not the whole picture — and the parts it can't reach
+      are the parts that decide competitive position.</p>
+
+    <div class="locked">
+      <h3>Reserved for the full engagement</h3>
+      <p>Three data sets returned nothing on this scan because they require connected commercial
+        APIs and manual analyst review. They are the ones we'd start with.</p>
+      <div class="lockgrid">
+        <div class="lockitem">
+          <div class="h"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Backlink & domain authority</div>
+          <div class="d">Who links to UWallet, who links to Zain Cash and Orange Money, and where the authority gap actually sits. Returned no data on this scan.</div>
+        </div>
+        <div class="lockitem">
+          <div class="h"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Live keyword rankings</div>
+          <div class="d">Where UWallet actually ranks in Jordan for the Arabic and English terms that carry commercial intent — by city, by device, against every competitor.</div>
+        </div>
+        <div class="lockitem">
+          <div class="h"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Competitor benchmark</div>
+          <div class="d">The full check suite run against every wallet in the Jordanian market, scored side by side, so the board sees competitive position rather than a number in isolation.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <p class="kicker" style="color:var(--s2)">Next step</p>
+    <h2>A free scan found this. Give us a room for an hour.</h2>
+    <p style="max-width:64ch">Everything in this document came from automated scans of publicly
+      available data — no access to your analytics, your servers or your team. We'd like to walk your
+      leadership through the full picture: the three missing data sets, the competitive benchmark,
+      and a costed 90-day plan built for a company operating at UWallet's scale.</p>
+    <a class="ctabtn" href="#">Book the walkthrough</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h4>Methodology &amp; sources</h4>
+    <p style="color:rgba(255,255,255,.55);max-width:75ch">Website findings from a VoxAudit automated
+      scan of uwallet.jo on 17 August 2026: 51 checks across 200 HTML pages discovered via 5 XML
+      sitemaps, plus Google PageSpeed Insights for mobile and desktop. Social findings from the
+      VoxAudit Instagram profile scan of @uwalletjo. App store data retrieved from Google Play and
+      the Apple App Store on 17 August 2026. Market data as cited below. Authority and ranking
+      scores are provisional — the underlying APIs returned no data during this scan.</p>
+    <ul style="margin-top:14px">
+      <li><a href="https://uwallet.jo/en/home/">uwallet.jo</a> — homepage and sitemap crawl</li>
+      <li><a href="https://uwallet.jo/en/uwallet-news/">uwallet.jo/en/uwallet-news</a> — newsroom, last updated 22 October 2023</li>
+      <li><a href="https://play.google.com/store/apps/details?id=com.a2a.umniah">Google Play — uwallet</a> · <a href="https://play.google.com/store/apps/details?id=com.audiogram.zaincash">Google Play — Zain Cash Jordan</a></li>
+      <li><a href="https://www.paymentology.com/blog/jordans-digital-payment-momentum-what-it-means-for-issuers">JoPACC 2024 payment system figures</a> — wallets, CliQ, eFAWATEERcom, financial inclusion</li>
+      <li><a href="https://www.zawya.com/en/economy/levant/jordan-cliq-transfers-reach-nearly-136bln-in-2026-jopacc-c11312ib">JoPACC via Zawya</a> — CliQ transactions and value, Jan–May 2026</li>
+      <li><a href="https://www.umniah.com/explore-umniah/uwallet-ceo-2/">Interview with Dr. Alaa Ensheiwat</a> — CliQ volume position, November 2023</li>
+      <li><a href="https://uwallet.jo/en/about-us/">UWallet — About us</a> — ownership, six-bank consortium, CBJ licensing</li>
+      <li><a href="https://petra.gov.jo/Include/InnerPage.jsp?ID=68387&amp;lang=en&amp;name=en_news">Petra</a> — Network International partnership · <a href="https://www.khaberni.com/news/833360-uwallet-first-payment-services-provider-in-jordan-to-adopt-electronic-signature-solutions-in-collaboration-with-tawqeey">Khaberni</a> — Tawqeey e-signature first · <a href="https://www.umniah.com/explore-umniah/mastercard-and-uwallet-announce-strategic-partnership-to-drive-payment-innovations-and-financial-inclusion-in-jordan/">Umniah</a> — Mastercard partnership</li>
+    </ul>
+    <p style="margin-top:22px;color:rgba(255,255,255,.4)">Prepared by Voxlumedia · Confidential ·
+      August 2026 · This document contains findings from publicly available data only.</p>
+  </div>
+</footer>
+</div>
+
+<!-- ══════════════════════════ ARABIC ══════════════════════════ -->
+<div id="ar" dir="rtl" hidden>
+
+<div class="hero">
+  <div class="wrap">
+    <p class="eyebrow">تدقيق الحضور الرقمي، سري</p>
+    <h1>كسبتوا المحفظة، بس لسا ما كسبتوا خانة البحث.</h1>
+    <p class="lede">عندكم أكتر من مليون محفظة، وحسب آخر تصريح علني للرئيس التنفيذي، UWallet الأولى بالأردن بحجم الحوالات عبر CliQ.
+      بس الموقع الإلكتروني جايب <strong style="color:#fff">٧٨ من ١٠٠ — تقدير C</strong>، وبياخد
+      <strong style="color:#fff">٢٣.٥ ثانية</strong> عشان يفتح على الموبايل، وما في ولا عنوان
+      رئيسي (H1) بالصفحة الرئيسية. هاد كله طلع من فحص آلي مجاني واحد. وهلق خليني أوضّحلكم شو معناته.</p>
+    <div class="meta">
+      <span>مُعدّة لـ <b>د. علاء نشيوات، الرئيس التنفيذي لـ UWallet</b></span>
+      <span>من <b>Voxlumedia</b></span>
+      <span>تاريخ الفحص <b><bdi>١٧ آب ٢٠٢٦</bdi></b></span>
+      <span>النطاق <b><bdi>٢٠٠ صفحة</bdi>، <bdi>٥ خرائط موقع</bdi>، <bdi>٥١ فحص</bdi></b></span>
+    </div>
+  </div>
+</div>
+
+<div class="gradeband">
+  <div class="wrap">
+    <div class="gradegrid">
+      <div class="gradebox">
+        <div class="g">C</div>
+        <div class="n">٧٨ / ١٠٠</div>
+        <div class="l">التقييم العام</div>
+      </div>
+      <div class="checkrow">
+        <div class="chk pass"><div class="v">٣٠</div><div class="k">فحص ناجح</div></div>
+        <div class="chk warn"><div class="v">١٨</div><div class="k">تنبيه</div></div>
+        <div class="chk fail"><div class="v">٣</div><div class="k">إخفاقات عالية الخطورة</div></div>
+        <div class="chk warn"><div class="v">١١٥</div><div class="k">صفحة ضعيفة المحتوى من ٢٠٠</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">الخلاصة بجملة وحدة</p>
+    <h2>شركة مدفوعات عندها أكتر من مليون محفظة، شغّالة على موقع جوجل بالكاد بيقدر يقراه.</h2>
+    <p class="intro">ولا إشي من هاد الكلام عن المنتج تبعكم. التطبيق عنده أكتر من مليون تحميل،
+      وحجم العمليات بيحكي عن حاله. هاد التدقيق عن الطبقة اللي <em>قدّام</em> المنتج — الصفحات
+      والإشارات والقصة اللي بتقرر إذا واحد أردني ما سمع فيكم من قبل رح يلاقيكم، ويثق فيكم،
+      وينزّل التطبيق. وعلى هاي الطبقة بالذات، الفجوة بين UWallet <em>الحقيقية</em>
+      و UWallet <em>اللي بتبيّن</em> أونلاين هي أوسع فجوة قِسناها لشركة بهاد الحجم.</p>
+
+    <div class="fig">
+      <p class="figttl">النتيجة حسب كل فئة</p>
+      <p class="figsub">فحص VoxAudit لموقع uwallet.jo — ١٧ آب ٢٠٢٦. كل ما زاد الرقم كل ما كان أحسن.</p>
+      <div class="bars" id="scorebars-ar"></div>
+      <div class="legend">
+        <span><i class="sdot" style="background:var(--good)"></i> قوي (٨٥+)</span>
+        <span><i class="sdot" style="background:var(--warn)"></i> بدّه شغل (<bdi>٧٠–٨٤</bdi>)</span>
+        <span><i class="sdot" style="background:var(--serious)"></i> ضعيف (<bdi>٥٥–٦٩</bdi>)</span>
+        <span><i class="sdot" style="background:var(--crit)"></i> حرج (أقل من ٥٥)</span>
+      </div>
+      <p class="note">فئة «السلطة» وفئة «الترتيب» ما رجّعوا أي بيانات حيّة بهاد الفحص — واجهات
+        الروابط الخلفية ونتائج البحث ما كانت موصولة. فعشان هيك نتيجتهم مبدئية ومستثناة من التحليل
+        تحت. قياسهم بشكل صحيح جزء من نطاق العمل الكامل.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">النتائج</p>
+    <h2>خمس نقاط عم تكلّفكم زباين هلق وإنتو قاعدين</h2>
+
+    <div class="finding crit">
+      <div class="fhead">
+        <span class="badge crit">حرج</span>
+        <div><div class="fnum">النتيجة ٠١</div><h3>موقعكم على الموبايل بدّه ٢٣.٥ ثانية عشان يفتح</h3></div>
+      </div>
+      <p>الحد اللي جوجل نفسها بتعتبره "جيد" لسرعة ظهور أكبر عنصر بالصفحة هو ٢.٥ ثانية. الصفحة
+        الرئيسية لـ UWallet على الموبايل بتاخد <strong>٢٣.٥ ثانية</strong> — يعني ٩.٤ أضعاف الحد.
+        وعلى الكمبيوتر ٤.٧ ثانية، وهاد كمان قريب من ضعف الحد. الموقع شايل ٣٢ ملف سكربت و٢٠ ملف تنسيق
+        منفصل، ومن ١٥ صورة بالصفحة الرئيسية بس ٥ منهم بيستخدموا التحميل المؤجّل.</p>
+      <p>لمحفظة أساسها الموبايل، بسوق ٩٤٪ من ناسه على الإنترنت، هاد أغلى سطر بالتقرير كله. كل
+        زائر بيطلع قبل ما تفتح الصفحة هو كلفة اكتساب زبون دفعتوها وما حصّلتوا مقابلها.</p>
+      <div class="stat">
+        <div><b style="color:var(--crit)">٢٣.٥ ث</b><span>زمن ظهور أكبر عنصر LCP (الهدف: ٢.٥ ث)</span></div>
+        <div><b style="color:var(--crit)">٤٧/١٠٠</b><span>نتيجة PageSpeed للموبايل</span></div>
+        <div><b style="color:var(--crit)">٤٩/١٠٠</b><span>نتيجة PageSpeed للكمبيوتر</span></div>
+        <div><b style="color:var(--serious)">٠.١٣٦</b><span>تزحزح التخطيط التراكمي CLS (الهدف: أقل من ٠.١)</span></div>
+      </div>
+      <div class="so"><div class="t">كيف بنحلّها</div>
+        <p>دفعة عمل مركّزة لمعالجة مؤشرات أداء الويب الأساسية (Core Web Vitals): دمج السكربتات وملفات التنسيق، تضمين الـ CSS
+        الحرجة، تحويل صيغ الصور وتغطية التحميل المؤجّل بالكامل، ضبط استجابة السيرفر، وحوكمة
+        الأكواد الخارجية. الهدف: أقل من ٢.٥ ثانية على الموبايل ونتيجة سرعة فوق ٨٠ خلال ٣٠ يوم.</p></div>
+    </div>
+
+    <div class="finding crit">
+      <div class="fhead">
+        <span class="badge crit">حرج</span>
+        <div><div class="fnum">النتيجة ٠٢</div><h3>الصفحتين الرئيسيتين الاتنين بدون عنوان رئيسي</h3></div>
+      </div>
+      <p>العنوان الرئيسي (H1) هو أبسط إشارة بتعطيها الصفحة لمحرك البحث عن موضوعها. والمدخلين
+        الاتنين لموقعكم ناقصهم هاي الإشارة. صفحة <code>uwallet.jo/en/home/</code> ما فيها
+        <strong>ولا عنوان رئيسي</strong>، وفيها ٣٦٦ كلمة ظاهرة وما فيها ولا عنوان فرعي من مستوى
+        H3. وصفحة <code>uwallet.jo/</code> كمان ناقصها العنوان الرئيسي، وفيها ٣٥٢ كلمة، وجابت
+        <strong>٧١ من ١٠٠ — أوطى نتيجة من بين ١٠٠ صفحة فحصناها</strong>. وفي ٦ صفحات تانية عندها
+        المشكلة المعاكسة: أكتر من عنوان رئيسي بالصفحة الوحدة.</p>
+      <p>يعني أهم صفحتين عندكم من أضعف الصفحات — وهاد لمزوّد خدمات دفع مرخّص ووراه تحالف من
+        ٦ بنوك أردنية.</p>
+      <div class="stat">
+        <div><b style="color:var(--crit)">٠</b><span>عناوين رئيسية بالصفحتين</span></div>
+        <div><b style="color:var(--serious)">٣٦٦</b><span>كلمة بصفحة en/home/</span></div>
+        <div><b style="color:var(--serious)">٧١/١٠٠</b><span>uwallet.jo/ — الأوطى من ١٠٠</span></div>
+        <div><b style="color:var(--serious)">٦</b><span>صفحات فيها عناوين رئيسية متعددة</span></div>
+      </div>
+      <div class="so"><div class="t">كيف بنحلّها</div>
+        <p>إعادة بناء البنية الدلالية والمحتوى للصفحة الرئيسية حوالين الكلمات اللي الأردنيين
+        فعلياً بيدوّروا عليها — بالعربي والإنجليزي — بعنوان رئيسي واحد واضح، وتسلسل منظّم من
+        العناوين الفرعية، وعمق بالمواضيع اللي بتحوّل: العمولات، الأمان، ترخيص البنك المركزي،
+        البنوك المشاركة، وعرض الحوالات الدولية.</p></div>
+    </div>
+
+    <div class="finding ser">
+      <div class="fhead">
+        <span class="badge ser">خطير</span>
+        <div><div class="fnum">النتيجة ٠٣</div><h3>١١٥ صفحة من أصل ٢٠٠ محتواها أضعف من إنها تنافس بنتائج البحث</h3></div>
+      </div>
+      <p>من بين ٢٠٠ صفحة اكتشفناها بخرائط الموقع الخمس، في <strong>١١٥ صفحة فيها أقل من ٣٥٠
+        كلمة ظاهرة</strong>. و١٧ صفحة ما عندها وصف تعريفي أبداً. و٢٠ صفحة بتشترك بنفس الوصف
+        و١٠ صفحات بتشترك بنفس العنوان — يعني عم تطلبوا من جوجل يختار بين صفحات بتبيّنلو
+        متطابقة. و٦٤ صورة من أصل ٤٧٨ بدون نص بديل، وهاي إشارة ترتيب وفجوة وصول للأشخاص ذوي
+        الإعاقة بنفس الوقت.</p>
+      <p>وبالإيجابي: كل صفحة عندها وسم canonical (الرابط المعتمد) وبيانات منظّمة (Schema). يعني الأساس موجود.
+        اللي ناقص هو المحتوى اللي المفروض يتبنى عليه.</p>
+      <div class="stat">
+        <div><b style="color:var(--serious)">١١٥</b><span>صفحة ضعيفة المحتوى</span></div>
+        <div><b style="color:var(--serious)">٢٠</b><span>وصف تعريفي مكرر</span></div>
+        <div><b style="color:var(--serious)">١٧</b><span>وصف تعريفي مفقود</span></div>
+        <div><b style="color:var(--warn)">٦٤</b><span>صورة بدون نص بديل</span></div>
+      </div>
+      <div class="so"><div class="t">كيف بنحلّها</div>
+        <p>برنامج محتوى مرتّب حسب الأولوية: منجمّع الـ ١١٥ صفحة حسب النية التجارية، منشيل أو
+        مندمج اللي ما إلها وظيفة، ومنعيد بناء الباقي كصفحات بتجاوب فعلاً — عمولات، أدلة
+        استخدام، تسجيل التجار، شرح الأمان — مع عناوين وأوصاف فريدة عبر خريطة الموقع كاملة.</p></div>
+    </div>
+
+    <div class="finding ser">
+      <div class="fhead">
+        <span class="badge ser">خطير</span>
+        <div><div class="fnum">النتيجة ٠٤</div><h3>قسم الأخبار عندكم واقف من تشرين الأول ٢٠٢٣</h3></div>
+      </div>
+      <p>قسم الأخبار عندكم فيه <strong>خبرين بس</strong>. آخر واحد تاريخه
+        <strong>٢٢ تشرين الأول ٢٠٢٣</strong>، واللي قبله من كانون الأول ٢٠٢٢. وبنفس الوقت، الشراكة
+        مع ماستركارد، والشراكة مع Network International، والحوالات الدولية على الـ IBAN، وتوزيع
+        المساعدات النقدية ببصمة العين، وإنكم صرتوا أول مزوّد خدمات دفع بالأردن بيعتمد التوقيع
+        الإلكتروني مع "توقيعي" — كل هاد موثّق ومنشور للعموم.</p>
+      <p>هاي التغطية موجودة — على موقع أمنية، وعلى بترا، وعلى زاوية، وعلى خبرني. بس مش
+        موجودة عندكم. لما شريك أو جهة رقابية أو صحفي أو مستثمر يبحث عن "UWallet" ويوصل لقسم
+        الأخبار تبعكم، الشركة بتبيّن كأنها واقفة من ٣ سنين. وهاي أرخص فجوة مصداقية بالتقرير كله
+        من ناحية الحل، وأكترها ضرر إذا ضلّت مفتوحة.</p>
+      <div class="so"><div class="t">كيف بنحلّها</div>
+        <p>تفعيل قسم الأخبار كأصل إعلامي مملوك: منرجّع إعلانات <bdi>٢٠٢٤–٢٠٢٦</bdi> اللي أصلاً موجودة
+        بالسجل العام، منثبّت وتيرة نشر بالعربي والإنجليزي، ومنضيف بيانات منظّمة للمقالات والمؤسسة
+        عشان إعلاناتكم تصير مؤهلة للنتائج المميزة، بدل ما أطراف تانية تتفوّق عليكم بأخباركم إنتو.</p></div>
+    </div>
+
+    <div class="finding wrn">
+      <div class="fhead">
+        <span class="badge wrn">تنبيه</span>
+        <div><div class="fnum">النتيجة ٠٥</div><h3>حضوركم كمنشأة محلية شبه معدوم</h3></div>
+      </div>
+      <p>الموقع ما فيه رابط لملف النشاط التجاري على جوجل ولا خريطة مدمجة. وما في نمط عنوان
+        واضح بالصفحة الرئيسية، وما في نوع بيانات منظّمة للمنشأة المحلية أو الخدمة المالية بين
+        الـ ١٢ نوع اللي لقيناهم. في رقم هاتف (٠٧٨٨٠٠١٤٠٠) بس بدون بيانات اسم-عنوان-هاتف
+        متسقة وراه.</p>
+      <p>وفي أمور أصغر بس بتتراكم: من ٦٠ رابط بس فحصناهم من أصل ٥٦٥، طلع اتنين مكسورين —
+        <strong>رابط صفحتكم على فيسبوك</strong> (خطأ ٤٠٠)، والأغلى منه، <strong>رابط ماستركارد
+        على صفحة World Mastercard تبعتكم</strong> (خطأ ٤٠٤). وكمان في مراجع لملفات على HTTP بتخلق
+        خطر محتوى مختلط على موقع HTTPS، وناقص ترويسة Referrer-Policy. ولمؤسسة مرخّصة من البنك المركزي، ترويسات الأمان إشارة ثقة الشركاء
+        والعملاء المؤسسيين بيفحصوها فعلياً.</p>
+      <div class="stat">
+        <div><b style="color:var(--warn)">٠</b><span>روابط لملف جوجل أو خريطة</span></div>
+        <div><b style="color:var(--warn)">٢</b><span>روابط مكسورة من ٦٠ بس فحصناهم</span></div>
+        <div><b style="color:var(--warn)">٥٦٥</b><span>رابط مكتشف، ٥٠٥ ما انفحصوا</span></div>
+        <div><b style="color:var(--warn)">١</b><span>ترويسة أمان ناقصة</span></div>
+      </div>
+      <div class="so"><div class="t">كيف بنحلّها</div>
+        <p>برنامج هوية وإدراج بالأدلة: منسجّل ملف النشاط التجاري على جوجل (Google Business Profile) ومنظبّطه بالكامل، منركّب
+        بيانات منظّمة للخدمة المالية والمنشأة المحلية، منوحّد بيانات الاسم والعنوان والهاتف على
+        كل الأدلة والحسابات، منفحص الـ ٥٦٥ رابط كلهم ومنصلّح كل كسر، ومنسكّر ثغرات المحتوى
+        المختلط والترويسات.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">طبقة السمعة</p>
+    <h2>نفس عدد التحميلات تبع زين كاش. وربع عدد التقييمات.</h2>
+    <p class="intro">صفحة التطبيق بالمتجر هي آخر صفحة بيشوفها الزبون المحتمل قبل ما يقرر ينزّل.
+      التطبيقين الاتنين بفئة المليون تحميل وفوق. الفرق بالحكي اللي بيسمعوه لما يوصلوا.</p>
+
+    <div class="fig">
+      <p class="figttl">مقارنة متجر أندرويد</p>
+      <p class="figsub">جوجل بلاي، الأردن — بتاريخ ١٧ آب ٢٠٢٦.</p>
+      <div class="gbars">
+        <div class="grp">
+          <div class="gname">متوسط التقييم (من ٥)</div>
+          <div class="grow"><span class="who">UWallet</span>
+            <div class="gbarwrap"><span class="gbar a" style="width:80%"></span><span class="gval">٤.٠ ★</span></div></div>
+          <div class="grow"><span class="who">زين كاش</span>
+            <div class="gbarwrap"><span class="gbar b" style="width:92%"></span><span class="gval">٤.٦ ★</span></div></div>
+        </div>
+        <div class="grp">
+          <div class="gname">عدد التقييمات</div>
+          <div class="grow"><span class="who">UWallet</span>
+            <div class="gbarwrap"><span class="gbar a" style="width:24.6%"></span><span class="gval">١٥٬١٠٠</span></div></div>
+          <div class="grow"><span class="who">زين كاش</span>
+            <div class="gbarwrap"><span class="gbar b" style="width:100%"></span><span class="gval">٦١٬٣٠٠</span></div></div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="sdot" style="background:var(--s1)"></i> UWallet</span>
+        <span><i class="sdot" style="background:var(--s2)"></i> زين كاش</span>
+      </div>
+    </div>
+
+    <p>زين كاش جمّعت <strong>٤ أضعاف عدد التقييمات</strong> وبتقييم أعلى بـ ٠.٦ نجمة — من قاعدة
+      تحميلات مشابهة. والتقييم عامل ترتيب جوّا بحث المتجر، وهو أول إشارة ثقة بيقراها المستخدم
+      الجديد. التقييمات السلبية الأخيرة لـ UWallet بتتجمّع حوالين ٣ مواضيع متكررة:
+      <strong>رموز التحقق بتتأخر، ومبالغ بتنسحب مرتين وبتاخد أكتر من شهر لترجع، وطلبات دعم بتضل
+      بدون رد.</strong></p>
+    <p>هاي مشاكل تشغيلية مش تسويقية — بس إنها تكون أعلى صوت عام عن UWallet، هاي <em>فعلاً</em>
+      مشكلة تسويقية، وقابلة للحل. وما في أي نشاط ظاهر من UWallet بالرد على التقييمات على أي من المتجرين.</p>
+    <div class="so"><div class="t">كيف بنحلّها</div>
+      <p>برنامج سمعة شغّال باستمرار: رد منظّم على كل تقييم بالعربي والإنجليزي، ورسائل داخل
+      التطبيق بتوقيت العمليات الناجحة عشان نرفع التقييم من الأغلبية الراضية اللي عمرها ما بتقيّم،
+      وتقرير شهري بالمواضيع المتكررة بيرجع لفرق المنتج والدعم عندكم عشان الأسباب تتصلّح مش بس
+      يجيها رد.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">السوشال ميديا</p>
+    <h2>إنتاج قوي. بس ما عم يتحوّل لتسجيلات.</h2>
+    <p class="intro">السوشال واحد من مجالين بس فحص الموقع جاب فيهم علامة كاملة — وسوم Open
+      Graph وبطاقات تويتر وروابط الحسابات كلها مركّبة صح. والمحتوى نفسه ثابت وملتزم بالهوية.
+      الفجوة عند النقطة اللي المفروض الانتباه يتحوّل فيها لمحفظة.</p>
+
+    <div class="tiles">
+      <div class="tile"><b>٧٥<span style="font-size:16px;color:var(--muted)">/١٠٠</span></b>
+        <div class="lab">جاهزية حساب انستغرام</div><div class="src">فحص VoxAudit للسوشال</div></div>
+      <div class="tile"><b style="color:var(--serious)">٦٥</b><div class="lab">وضوح الحساب</div><div class="src">إمكانية النمو: عالية</div></div>
+      <div class="tile"><b style="color:var(--serious)">٦٥</b><div class="lab">جودة المحتوى</div><div class="src">إمكانية النمو: عالية</div></div>
+      <div class="tile"><b style="color:var(--serious)">٦٥</b><div class="lab">إشارات الثقة</div><div class="src">إمكانية النمو: عالية</div></div>
+    </div>
+
+    <p><strong>اللي شغّال:</strong> نشر ثابت ومتكرر بصيغ متنوعة، ورسالة علامة تجارية واضحة
+      ومتماسكة لمنتج مالي، وقدرة مثبتة على إنتاج منشورات استثنائية بتتفوّق بفارق كبير عن المعدل.</p>
+    <p><strong>اللي مش شغّال:</strong> التفاعل — وخصوصاً التعليقات — أوطى من اللي المفروض يطلع
+      من هاد الوصول. والمنشورات الاستثنائية ما حدا عم يفكّكها لصيغة قابلة للتكرار. وما في أتمتة
+      للرسائل الخاصة أو التعليقات بتلتقط النية اللي بيولّدها المحتوى، وهاي بالنسبة لمحفظة قناة عملاء محتملين
+      مباشرة وقابلة للقياس.</p>
+    <div class="so"><div class="t">كيف بنحلّها</div>
+      <p>إدارة VoxGrowth للسوشال: نموذج محتوى أساسه التفاعل ومبني على الصيغ اللي منشوراتكم
+      الاستثنائية نفسها أثبتتها، وأتمتة تعليقات ورسائل بتوجّه النية مباشرة لتفعيل المحافظ، وحلقة
+      أداء شهرية بتربط صرف السوشال بالتسجيلات مش بمرات الظهور.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">سياق السوق</p>
+    <h2>ليش هاي النافذة عم تسكّر</h2>
+    <p class="intro">سوق المدفوعات الأردني مش واقف بينما الموقع واقف. الأرقام تحت من JoPACC ومن
+      البنك المركزي الأردني، وبتوصف قطاع صارت فيه خدمة التحويل سلعة عامة — والتميّز عم ينتقل
+      للثقة، وسهولة إنك تنلاقى، والقصة.</p>
+
+    <div class="tiles">
+      <div class="tile"><b>٢.٥٩ مليون</b><div class="lab">مستخدم محفظة إلكترونية بالأردن</div><div class="src">JoPACC، نهاية ٢٠٢٤</div></div>
+      <div class="tile"><b>٢.٢٨ مليون</b><div class="lab">مستخدم CliQ</div><div class="src">JoPACC، أيار ٢٠٢٦</div></div>
+      <div class="tile"><b>+١٧٨٪</b><div class="lab">نمو حجم عمليات CliQ</div><div class="src">٢٠٢٤ مقابل ٢٠٢٣</div></div>
+      <div class="tile"><b>~٤٦٪</b><div class="lab">من البالغين لسا خارج المدفوعات الرقمية إلى حد كبير</div><div class="src">JoPACC عبر Paymentology، ٢٠٢٤</div></div>
+    </div>
+
+    <div class="tblwrap">
+      <table>
+        <thead><tr><th>المؤشر</th><th>القيمة</th><th>الفترة</th></tr></thead>
+        <tbody>
+          <tr><td>عمليات CliQ</td><td class="num">٩٤.٠٥ مليون</td><td>كانون الثاني–أيار ٢٠٢٦</td></tr>
+          <tr><td>قيمة حوالات CliQ</td><td class="num">٩.٧٣ مليار دينار</td><td>كانون الثاني–أيار ٢٠٢٦</td></tr>
+          <tr><td>إجمالي عمليات JoPACC</td><td class="num">٢٢٤.٦٢ مليون <span style="color:var(--good)">(+٧٧.٢٪)</span></td><td>٢٠٢٤</td></tr>
+          <tr><td>عمليات إي فواتيركم</td><td class="num">٦٦.٠٧ مليون <span style="color:var(--good)">(+٢٥.٦٪)</span></td><td>٢٠٢٤</td></tr>
+          <tr><td>الشمول المالي للبالغين</td><td class="num">٦٢٪ <span style="color:var(--muted)">(من ٤٧٪ سنة ٢٠٢١)</span></td><td>٢٠٢٤</td></tr>
+          <tr><td>انتشار الإنترنت</td><td class="num">٩٤٪</td><td>٢٠٢٤</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>هاي الأرقام مع بعض بتحكي إشي واحد: <strong>التحويل الفوري بين البنوك صار مجاني وشامل
+      وعادي.</strong> ولما وظيفة التحويل الأساسية تبطّل سبب لاختيار محفظة، بصير لازم المحفظة
+      تكسب بكل إشي حواليها — البطاقة، الممر الدولي، شبكة التجار، طبقة الولاء، العلامة. وكل وحدة
+      من هدول بتتوصّل أونلاين. وحالياً UWallet عم توصّلهم عبر صفحة رئيسية بدون عنوان رئيسي
+      وبتاخد ٢٣.٥ ثانية عشان تبيّن.</p>
+    <p>والـ ٤٦٪ الباقيين من البالغين الأردنيين خارج النظام الرقمي ما رح توصلوهم عبر علاقة بنكية
+      أصلاً ما عندهم. رح توصلوهم عبر البحث، والسوشال، ومتاجر التطبيقات، والكلام بين الناس.
+      وهدول بالضبط الواجهات الأربع اللي هاد التدقيق لقاها الأضعف.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">الخطة</p>
+    <h2>شو رح نعمل، وبأي ترتيب</h2>
+    <p class="intro">تسعين يوم، ٣ مراحل، مرتّبة بحيث المشكلة الأغلى تنحل أول إشي، وكل مرحلة بعدها
+      بتبني على أساس شغّال فعلاً.</p>
+
+    <div class="phase">
+      <span class="ptag">المرحلة ١، يوم <bdi>٠–٣٠</bdi></span>
+      <h3>الإسعاف التقني</h3>
+      <ul>
+        <li>معالجة مؤشرات الأداء الأساسية — دمج السكربتات، الـ CSS الحرجة، معالجة الصور، التخزين المؤقت واستجابة السيرفر</li>
+        <li>إصلاح العنوان الرئيسي المفقود بالصفحة الرئيسية ومعالجة الـ ٦ صفحات بعناوين متعددة</li>
+        <li>عناوين وأوصاف تعريفية فريدة لكل الـ ٢٠٠ صفحة بخريطة الموقع</li>
+        <li>فحص الـ ٥٦٥ رابط كلهم — ما انفحص منهم غير ٦٠ هون — وإصلاح كل كسر</li>
+        <li>إغلاق خطر المحتوى المختلط وإضافة ترويسة Referrer-Policy الناقصة</li>
+        <li>نصوص بديلة لـ ٦٤ صورة غير مغطاة</li>
+      </ul>
+      <div class="target">الهدف: تحميل الموبايل أقل من ٢.٥ ثانية، السرعة من ٤٧ إلى ٨٠+، صفر إخفاقات عالية الخطورة</div>
+    </div>
+
+    <div class="phase">
+      <span class="ptag">المرحلة ٢، يوم <bdi>٣٠–٦٠</bdi></span>
+      <h3>الهوية والسلطة والقصة</h3>
+      <ul>
+        <li>إنشاء وتجهيز ملف النشاط التجاري على جوجل بالكامل؛ وتركيب بيانات منظّمة للخدمة المالية والمنشأة المحلية</li>
+        <li>توحيد بيانات الاسم والعنوان والهاتف على جوجل وبينغ وخرائط آبل وفيسبوك والأدلة الأردنية المحلية</li>
+        <li>تفعيل قسم الأخبار — تعبئة إعلانات <bdi>٢٠٢٤–٢٠٢٦</bdi>، وتثبيت وتيرة نشر بلغتين، وإضافة بيانات منظّمة للمقالات</li>
+        <li>مراجعة بنية الروابط بالعربي والإنجليزي، بما فيها الروابط العربية المرمّزة الموجودة حالياً بخريطة الموقع</li>
+        <li>خط أساس للروابط الخلفية وسلطة النطاق — البيانات اللي هاد الفحص المجاني ما قدر يجيبها</li>
+      </ul>
+      <div class="target">الهدف: بصمة هوية كاملة، قسم أخبار محدّث، خط أساس للسلطة</div>
+    </div>
+
+    <div class="phase">
+      <span class="ptag">المرحلة ٣، يوم <bdi>٦٠–٩٠</bdi></span>
+      <h3>التقاط الطلب والسمعة</h3>
+      <ul>
+        <li>إعادة بناء أو شطب الـ ١١٥ صفحة الضعيفة مقابل طلب بحث حقيقي بالعربي والإنجليزي</li>
+        <li>تحسين صفحات التطبيق بالمتاجر (ASO) وبرنامج مستمر للرد على التقييمات وتوليدها على المتجرين</li>
+        <li>إدارة VoxGrowth للسوشال — محتوى أساسه التفاعل، وأتمتة رسائل وتعليقات بتوصل لتفعيل المحافظ</li>
+        <li>تتبّع مسار الزائر من البحث والسوشال ومتاجر التطبيقات لحد ما يفتح محفظة داخل GA4 وGTM</li>
+        <li>تقرير شهري جاهز لمجلس الإدارة مربوط بالتسجيلات، مش بمرات الظهور</li>
+      </ul>
+      <div class="target">الهدف: مساهمة قابلة للقياس من البحث والسوشال بتفعيل المحافظ</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="kicker">شو الفحص ما قدر يشوفه</p>
+    <h2>أهم ٣ أرقام لسا ناقصة</h2>
+    <p class="intro">هاد التقرير هو المستوى المجاني. بيشغّل ٥١ فحص آلي على ٢٠٠ صفحة بدون ما يلمس أنظمتكم. وهو عن قصد مش الصورة الكاملة — والأجزاء اللي ما بيوصلها هي الأجزاء اللي بتقرر الموقع
+      التنافسي.</p>
+
+    <div class="locked">
+      <h3>محجوزة لنطاق العمل الكامل</h3>
+      <p>٣ مجموعات بيانات ما رجّعت أي إشي بهاد الفحص لأنها بتحتاج واجهات تجارية موصولة ومراجعة
+        محلل بشري. وهي أول إشي رح نبلّش فيه.</p>
+      <div class="lockgrid">
+        <div class="lockitem">
+          <div class="h"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> الروابط الخلفية وسلطة النطاق</div>
+          <div class="d">مين حاطط روابط لـ UWallet، ومين حاطط لزين كاش وأورنج موني، ووين فعلياً فجوة السلطة. ما رجّعت بيانات بهاد الفحص.</div>
+        </div>
+        <div class="lockitem">
+          <div class="h"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> الترتيب الحيّ للكلمات المفتاحية</div>
+          <div class="d">وين UWallet فعلياً بتطلع بنتائج البحث بالأردن على الكلمات العربية والإنجليزية اللي إلها نية شرائية — حسب المدينة والجهاز، ومقابل كل منافس.</div>
+        </div>
+        <div class="lockitem">
+          <div class="h"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> مقارنة المنافسين</div>
+          <div class="d">منظومة الفحص الكاملة مشغّلة على كل محفظة بالسوق الأردني، ومقيّمة جنب بعض، عشان مجلس الإدارة يشوف المركز التنافسي مش رقم لوحده.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta">
+  <div class="wrap">
+    <p class="kicker" style="color:var(--s2)">الخطوة الجاية</p>
+    <h2>فحص مجاني لقى هاد كله. أعطونا ساعة مع فريقكم.</h2>
+    <p style="max-width:64ch">كل إشي بهاي الوثيقة طلع من فحوصات آلية لبيانات متاحة للعموم — بدون
+      أي وصول لتحليلاتكم ولا سيرفراتكم ولا فريقكم. بدنا نمشّي إدارتكم بالصورة الكاملة: مجموعات
+      البيانات الثلاثة الناقصة، ومقارنة المنافسين، وخطة ٩٠ يوم مسعّرة ومبنية لشركة بحجم UWallet.</p>
+    <a class="ctabtn" href="#">احجزوا الجلسة</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h4>المنهجية والمصادر</h4>
+    <p style="color:rgba(255,255,255,.55);max-width:75ch">نتائج الموقع من فحص VoxAudit الآلي لموقع
+      uwallet.jo بتاريخ ١٧ آب ٢٠٢٦: ٥١ فحص على ٢٠٠ صفحة HTML مكتشفة عبر ٥ خرائط موقع XML، بالإضافة
+      لـ Google PageSpeed Insights للموبايل والكمبيوتر. نتائج السوشال من فحص VoxAudit لحساب
+      @uwalletjo على انستغرام. بيانات المتاجر من جوجل بلاي وآبل ستور بتاريخ ١٧ آب ٢٠٢٦. بيانات
+      السوق كما هي مذكورة تحت. نتائج السلطة والترتيب مبدئية — الواجهات المعنية ما رجّعت بيانات
+      خلال هاد الفحص.</p>
+    <ul style="margin-top:14px">
+      <li><a href="https://uwallet.jo/en/home/">uwallet.jo</a> — الصفحة الرئيسية وزحف خريطة الموقع</li>
+      <li><a href="https://uwallet.jo/en/uwallet-news/">uwallet.jo/en/uwallet-news</a> — قسم الأخبار، آخر تحديث ٢٢ تشرين الأول ٢٠٢٣</li>
+      <li><a href="https://play.google.com/store/apps/details?id=com.a2a.umniah">جوجل بلاي — uwallet</a>، <a href="https://play.google.com/store/apps/details?id=com.audiogram.zaincash">جوجل بلاي — زين كاش الأردن</a></li>
+      <li><a href="https://www.paymentology.com/blog/jordans-digital-payment-momentum-what-it-means-for-issuers">أرقام أنظمة الدفع JoPACC ٢٠٢٤</a> — المحافظ، CliQ، إي فواتيركم، الشمول المالي</li>
+      <li><a href="https://www.zawya.com/en/economy/levant/jordan-cliq-transfers-reach-nearly-136bln-in-2026-jopacc-c11312ib">JoPACC عبر زاوية</a> — عمليات وقيمة CliQ، كانون الثاني–أيار ٢٠٢٦</li>
+      <li><a href="https://www.umniah.com/explore-umniah/uwallet-ceo-2/">مقابلة د. علاء نشيوات</a> — ترتيب UWallet بحجم عمليات CliQ، تشرين الثاني ٢٠٢٣</li>
+      <li><a href="https://uwallet.jo/en/about-us/">UWallet — من نحن</a> — الملكية وتحالف البنوك الستة وترخيص البنك المركزي</li>
+      <li><a href="https://petra.gov.jo/Include/InnerPage.jsp?ID=68387&amp;lang=en&amp;name=en_news">بترا</a> — شراكة Network International، <a href="https://www.khaberni.com/news/833360-uwallet-first-payment-services-provider-in-jordan-to-adopt-electronic-signature-solutions-in-collaboration-with-tawqeey">خبرني</a> — التوقيع الإلكتروني مع توقيعي، <a href="https://www.umniah.com/explore-umniah/mastercard-and-uwallet-announce-strategic-partnership-to-drive-payment-innovations-and-financial-inclusion-in-jordan/">أمنية</a> — شراكة ماستركارد</li>
+    </ul>
+    <p style="margin-top:22px;color:rgba(255,255,255,.4)">من إعداد Voxlumedia، سري،
+      آب ٢٠٢٦، هاي الوثيقة بتحتوي على نتائج من بيانات متاحة للعموم فقط.</p>
+  </div>
+</footer>
+</div>
+
+<script>
+const SCORES = [
+  {en:"Social",         ar:"السوشال",        v:100, note:false},
+  {en:"Usability",      ar:"سهولة الاستخدام", v:100, note:false},
+  {en:"SEO",            ar:"تحسين محركات البحث", v:85, note:false},
+  {en:"Technology",     ar:"التقنية",         v:84, note:false},
+  {en:"Links",          ar:"الروابط",         v:81, note:false},
+  {en:"Security",       ar:"الأمان",          v:75, note:false},
+  {en:"Authority",      ar:"السلطة",          v:75, note:true},
+  {en:"Rankings",       ar:"الترتيب",         v:75, note:true},
+  {en:"Local SEO",      ar:"البحث المحلي",    v:68, note:false},
+  {en:"Performance",    ar:"الأداء",          v:54, note:false}
+];
+const STATUS = [
+  {min:85, c:"var(--good)",    en:"Strong",     ar:"قوي"},
+  {min:70, c:"var(--warn)",    en:"Needs work", ar:"بدّه شغل"},
+  {min:55, c:"var(--serious)", en:"Weak",       ar:"ضعيف"},
+  {min:0,  c:"var(--crit)",    en:"Critical",   ar:"حرج"}
+];
+const AR_D = ["٠","١","٢","٣","٤","٥","٦","٧","٨","٩"];
+const toAr = n => String(n).replace(/\d/g, d => AR_D[+d]);
+
+function renderBars(lang){
+  const host = document.getElementById("scorebars-"+lang);
+  if(!host) return;
+  host.innerHTML = "";
+  SCORES.forEach(s=>{
+    const st = STATUS.find(x=>s.v>=x.min);
+    const name = s[lang] + (s.note ? " *" : "");
+    const num  = lang==="ar" ? toAr(s.v) : s.v;
+    const row = document.createElement("div");
+    row.className = "bar";
+    row.setAttribute("title", name+" — "+num+(lang==="ar"?"/١٠٠، ":"/100، ")+st[lang]);
+    row.innerHTML =
+      '<span class="lbl">'+name+'</span>'+
+      '<span class="track"><span class="fill" style="width:'+s.v+'%;background:'+st.c+'"></span></span>'+
+      '<span class="val"><i class="sdot" style="background:'+st.c+'"></i>'+num+' <span style="color:var(--muted);font-weight:500">'+st[lang]+'</span></span>';
+    host.appendChild(row);
+  });
+}
+
+function setLang(l){
+  const en = l === "en";
+  document.getElementById("en").hidden = !en;
+  document.getElementById("ar").hidden =  en;
+  document.getElementById("btn-en").setAttribute("aria-pressed", en);
+  document.getElementById("btn-ar").setAttribute("aria-pressed", !en);
+  document.documentElement.lang = l;
+  document.documentElement.dir  = en ? "ltr" : "rtl";
+  window.scrollTo({top:0});
+}
+
+renderBars("en");
+renderBars("ar");
+</script>
+</body>
+</html>
