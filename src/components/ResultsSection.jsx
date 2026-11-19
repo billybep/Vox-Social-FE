@@ -1,14 +1,53 @@
 import React, { useState } from 'react';
+import { auth } from '../utils/firebase';
 
 const LOGO_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/vsllogo.png";
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function ResultsSection({ results, url, platform, setView }) {
     const [leadSubmitted, setLeadSubmitted] = useState(false);
+    const [leadSending, setLeadSending] = useState(false);
     const [leadData, setLeadData] = useState({ name: '', email: '', phone: '', company: '' });
 
-    const handleLeadSubmit = (e) => {
+    const handleLeadSubmit = async (e) => {
         e.preventDefault();
-        setLeadSubmitted(true);
+        setLeadSending(true);
+        try {
+            const user = auth.currentUser;
+            const ghlPayload = {
+                firstName: leadData.name.split(' ')[0] || leadData.name,
+                lastName: leadData.name.split(' ').slice(1).join(' ') || '',
+                companyName: leadData.company || '',
+                email: leadData.email || user?.email || '',
+                phone: leadData.phone || user?.phoneNumber || '',
+                funnel_entry_point: "Social Score Tool",
+                lead_source_tool: "Social Score Tool",
+                date_of_audit: new Date().toISOString(),
+                social_profile_url: url,
+                platform_audited: platform,
+                social_score_overall: results.score,
+                social_score_status: results.label,
+                social_profile_readiness: results.categories?.businessReadiness || 0,
+                social_growth_potential: results.growthPotential,
+                social_profile_identity: results.profileIdentity,
+                social_key_strengths: Array.isArray(results.strengths) ? results.strengths.join(', ') : '',
+                social_opportunities: Array.isArray(results.opportunities) ? results.opportunities.join(', ') : '',
+                social_recommended_package: results.recommended_package
+            };
+            console.log('Sending Social Score lead to GHL:', ghlPayload);
+            const response = await fetch(`${API_BASE}/ghl/forward`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ghlPayload)
+            });
+            if (!response.ok) console.error('GHL forward failed:', response.status);
+            else console.log('Social Score lead forwarded to GHL successfully.');
+        } catch (err) {
+            console.error('GHL lead submit failed:', err);
+        } finally {
+            setLeadSending(false);
+            setLeadSubmitted(true);
+        }
     };
 
     const getScoreColor = (score) => {
@@ -26,15 +65,20 @@ export default function ResultsSection({ results, url, platform, setView }) {
             {/* Top Result Navigation Header */}
             <nav className="border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-50">
                 <div className="max-w-[1400px] mx-auto px-6 sm:px-12 py-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3 font-black text-xl cursor-pointer" onClick={() => setView('landing')}>
+                    <div className="flex items-center gap-3 font-black text-xl cursor-pointer" onClick={() => setView('dashboard')}>
                         <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
                             <img src={LOGO_URL} className="w-full h-full object-contain" alt="Logo" />
                         </div>
                         VOXLUMEDIA
                     </div>
-                    <button onClick={() => setView('landing')} className="text-sm border border-white/20 hover:border-white bg-white/5 hover:bg-white/10 font-bold py-2.5 px-6 rounded-full transition duration-300">
-                        Run New Scan &rarr;
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setView('dashboard')} className="text-sm border border-white/20 hover:border-white bg-white/5 hover:bg-white/10 font-bold py-2.5 px-5 rounded-full transition duration-300">
+                            <i className="fa-solid fa-house mr-1.5 text-xs text-white/60"></i> Dashboard
+                        </button>
+                        <button onClick={() => setView('landing')} className="text-sm border border-white/20 hover:border-white bg-white/5 hover:bg-white/10 font-bold py-2.5 px-6 rounded-full transition duration-300">
+                            Run New Scan &rarr;
+                        </button>
+                    </div>
                 </div>
             </nav>
 
@@ -194,27 +238,35 @@ export default function ResultsSection({ results, url, platform, setView }) {
                     </div>
                 </div>
 
-                {/* Lead Capture form */}
-                {/* <div className="solid-glassmorphic rounded-[2rem] border border-white/10 p-8 sm:p-12 shadow-2xl text-center relative overflow-hidden">
+                {/* Lead Capture form — fires GHL webhook on submit */}
+                <div className="solid-glassmorphic rounded-[2rem] border border-white/10 p-8 sm:p-12 shadow-2xl text-center relative overflow-hidden">
                     {!leadSubmitted ? (
                         <div className="max-w-xl mx-auto space-y-6 relative z-10">
-                            <div className="w-16 h-16 bg-white/5 border border-white/10 text-cyber-neonBlue rounded-full flex items-center justify-center mx-auto text-2xl mb-4">
+                            <div className="w-16 h-16 bg-white/5 border border-white/10 text-[#ff7b1a] rounded-full flex items-center justify-center mx-auto text-2xl mb-4">
                                 <i className="fa-solid fa-file-pdf"></i>
                             </div>
-                            <h3 className="text-3xl font-black text-white">Get Your Complete PDF Report</h3>
-                            <p className="text-white/60 font-medium">Enter your details to receive a full breakdown and an invitation to a free 30-minute growth consultation with our experts.</p>
-                            
+                            <h3 className="text-3xl font-black text-white">Unlock Your Full Growth Report</h3>
+                            <p className="text-white/60 font-medium">Enter your details and our team will reach out with an action plan tailored to your score.</p>
+
                             <form onSubmit={handleLeadSubmit} className="space-y-4 pt-4 text-left">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <input type="text" required placeholder="Full Name" value={leadData.name} onChange={(e) => setLeadData({...leadData, name: e.target.value})} className="w-full border border-white/10 focus:border-[#ff7b1a] rounded-xl px-4 py-3.5 focus:outline-none bg-white/5 text-white font-bold" />
-                                    <input type="email" required placeholder="Business Email" value={leadData.email} onChange={(e) => setLeadData({...leadData, email: e.target.value})} className="w-full border border-white/10 focus:border-[#ff7b1a] rounded-xl px-4 py-3.5 focus:outline-none bg-white/5 text-white font-bold" />
+                                    <input type="text" required placeholder="Full Name" value={leadData.name} onChange={(e) => setLeadData({...leadData, name: e.target.value})} className="w-full border border-white/10 focus:border-[#ff7b1a] rounded-xl px-4 py-3.5 focus:outline-none bg-white/5 text-white font-bold placeholder-white/30" />
+                                    <input type="email" required placeholder="Business Email" value={leadData.email} onChange={(e) => setLeadData({...leadData, email: e.target.value})} className="w-full border border-white/10 focus:border-[#ff7b1a] rounded-xl px-4 py-3.5 focus:outline-none bg-white/5 text-white font-bold placeholder-white/30" />
                                 </div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <input type="tel" required placeholder="Phone Number" value={leadData.phone} onChange={(e) => setLeadData({...leadData, phone: e.target.value})} className="w-full border border-white/10 focus:border-[#ff7b1a] rounded-xl px-4 py-3.5 focus:outline-none bg-white/5 text-white font-bold" />
-                                    <input type="text" required placeholder="Company Name" value={leadData.company} onChange={(e) => setLeadData({...leadData, company: e.target.value})} className="w-full border border-white/10 focus:border-[#ff7b1a] rounded-xl px-4 py-3.5 focus:outline-none bg-white/5 text-white font-bold" />
+                                    <input type="tel" placeholder="Phone Number (optional)" value={leadData.phone} onChange={(e) => setLeadData({...leadData, phone: e.target.value})} className="w-full border border-white/10 focus:border-[#ff7b1a] rounded-xl px-4 py-3.5 focus:outline-none bg-white/5 text-white font-bold placeholder-white/30" />
+                                    <input type="text" placeholder="Company Name (optional)" value={leadData.company} onChange={(e) => setLeadData({...leadData, company: e.target.value})} className="w-full border border-white/10 focus:border-[#ff7b1a] rounded-xl px-4 py-3.5 focus:outline-none bg-white/5 text-white font-bold placeholder-white/30" />
                                 </div>
-                                <button type="submit" className="w-full bg-[#ff7b1a] hover:bg-[#e06200] text-white font-black py-4 rounded-xl transition duration-300 shadow-md">
-                                    Send Me The Report &rarr;
+                                <button
+                                    type="submit"
+                                    disabled={leadSending}
+                                    className="w-full bg-[#ff7b1a] hover:bg-[#e06200] disabled:opacity-60 disabled:cursor-not-allowed text-white font-black py-4 rounded-xl transition duration-300 shadow-md flex items-center justify-center gap-2"
+                                >
+                                    {leadSending ? (
+                                        <><i className="fa-solid fa-spinner fa-spin"></i> Sending...</>
+                                    ) : (
+                                        <>Send Me The Report &rarr;</>
+                                    )}
                                 </button>
                             </form>
                         </div>
@@ -223,10 +275,10 @@ export default function ResultsSection({ results, url, platform, setView }) {
                             <div className="w-20 h-20 bg-emerald-400/10 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-4xl border border-emerald-400/20 shadow-xl">
                                 <i className="fa-solid fa-check"></i>
                             </div>
-                            <h4 className="text-3xl font-black text-white">Success!</h4>
-                            <p className="text-white/60 font-medium max-w-md mx-auto">Your comprehensive report is being generated. Our team will reach out to you shortly to schedule your growth strategy session.</p>
+                            <h4 className="text-3xl font-black text-white">You're on our radar!</h4>
+                            <p className="text-white/60 font-medium max-w-md mx-auto">Our team will reach out shortly to walk you through a tailored growth strategy based on your score.</p>
                             <div className="pt-6">
-                                <button 
+                                <button
                                     onClick={() => window.open(bookingUrl, '_blank')}
                                     className="bg-white hover:bg-gray-200 text-[#06021c] font-black px-8 py-3.5 rounded-xl transition-all shadow-md"
                                 >
@@ -235,7 +287,7 @@ export default function ResultsSection({ results, url, platform, setView }) {
                             </div>
                         </div>
                     )}
-                </div> */}
+                </div>
                 {/* Final CTA */}
                 <div className="solid-glassmorphic rounded-[2rem] border border-white/10 p-8 sm:p-12 shadow-2xl text-center relative overflow-hidden mt-12 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
                     <div className="relative z-10 max-w-2xl mx-auto space-y-6">

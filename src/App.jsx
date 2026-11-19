@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import DashboardSection from './components/DashboardSection';
 import LandingSection from './components/LandingSection';
 import LoadingSection from './components/LoadingSection';
 import ResultsSection from './components/ResultsSection';
-import ContactGateSection from './components/ContactGateSection';
 import SeoAuditSection from './components/SeoAuditSection';
 import AuthLogin from './components/AuthLogin';
+import { auth } from './utils/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { playSynthTick } from './utils/audio';
 
 function App() {
@@ -18,6 +20,16 @@ function App() {
     const [isFormSubmitted, setIsFormSubmitted] = useState(false);
     const [leadData, setLeadData] = useState(null);
     const [webhookStatus, setWebhookStatus] = useState('idle');
+
+    // Persist auth session on page reload — redirect to dashboard if already signed in
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user && view === 'login') {
+                setView('dashboard');
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
     const analysisSteps = [
         "Establishing secure connection to public nodes...",
@@ -122,6 +134,21 @@ function App() {
 
             setAnalysisResults(mappedData);
             setIsAiComplete(true);
+
+            // Save snapshot to localStorage for dashboard
+            try {
+                const lastSocialData = {
+                    url: url,
+                    score: mappedData.score,
+                    label: mappedData.label,
+                    platform: detectPlatform(url),
+                    date: new Date().toLocaleDateString()
+                };
+                localStorage.setItem('vox_last_social', JSON.stringify(lastSocialData));
+            } catch (e) {
+                console.warn('Failed to save last social scan to localStorage:', e);
+            }
+
             setView('results');
 
         } catch (error) {
@@ -135,9 +162,7 @@ function App() {
     const handleContactSubmit = (formData) => {
         setLeadData(formData);
         setIsFormSubmitted(true);
-    };
-
-    useEffect(() => {
+    };    useEffect(() => {
         if (isFormSubmitted && webhookStatus === 'idle') {
             if (isAiComplete) {
                 const sendWebhook = async () => {
@@ -205,6 +230,13 @@ function App() {
                     <AuthLogin setView={setView} />
                 )}
 
+                {view === 'dashboard' && (
+                    <DashboardSection
+                        setView={setView}
+                        analysisResults={analysisResults}
+                    />
+                )}
+
                 {view === 'landing' && (
                     <LandingSection
                         profileUrl={profileUrl}
@@ -218,10 +250,6 @@ function App() {
 
                 {view === 'seo_audit' && (
                     <SeoAuditSection setView={setView} />
-                )}
-
-                {view === 'contact_gate' && (
-                    <ContactGateSection onSubmit={handleContactSubmit} />
                 )}
 
                 {view === 'loading' && (

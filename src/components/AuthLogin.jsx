@@ -27,16 +27,16 @@ export default function AuthLogin({ setView }) {
             });
             if (res.ok) {
                 localStorage.setItem('auth_token', token);
-                if (setView) setView('landing');
+                if (setView) setView('dashboard');
             } else {
                 console.warn("Backend sync failed, but user is logged in via Firebase.");
                 localStorage.setItem('auth_token', token); // still log them in
-                if (setView) setView('landing');
+                if (setView) setView('dashboard');
             }
         } catch (err) {
             console.error("Sync error:", err);
             // Still proceed
-            if (setView) setView('landing');
+            if (setView) setView('dashboard');
         }
     };
 

@@ -24,7 +24,6 @@ export default function SeoAuditSection({ setView }) {
     const [isScanning, setIsScanning] = useState(false);
     const [scanProgress, setScanProgress] = useState(100);
     const [currentAction, setCurrentAction] = useState('Initializing scan sequences...');
-    const [auditResults, setAuditResults] = useState(null);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     // View state
@@ -203,6 +202,19 @@ export default function SeoAuditSection({ setView }) {
             setScanProgress(100);
             setAuditData(data);
             setResultsDomain(cleanDomain);
+
+            // Save snapshot to localStorage for dashboard
+            try {
+                const lastSeoData = {
+                    domain: cleanDomain,
+                    overall_score: data.overall_score ?? 78,
+                    overall_grade: data.overall_grade || 'C',
+                    date: new Date().toLocaleDateString()
+                };
+                localStorage.setItem('vox_last_seo', JSON.stringify(lastSeoData));
+            } catch (e) {
+                console.warn('Failed to save last SEO audit to localStorage:', e);
+            }
 
             // Success fanfare
             playSynthTick(523.25, 'sine', 0.12, 0.15);
@@ -439,7 +451,13 @@ export default function SeoAuditSection({ setView }) {
 
             {/* Header (Not printed) */}
             <header className="absolute top-0 left-0 w-full p-4 sm:p-6 sm:px-12 z-50 flex items-center justify-between no-print">
-                <div className="flex items-center gap-3 font-black text-xl tracking-tight text-white select-none">
+                <div
+                    onClick={() => {
+                        playSynthTick(500, 'sine', 0.05, 0.05);
+                        setView('dashboard');
+                    }}
+                    className="flex items-center gap-3 font-black text-xl tracking-tight text-white select-none cursor-pointer"
+                >
                     <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
                         <img src={LOGO_URL} className="w-full h-full object-contain" alt="Logo" />
                     </div>
@@ -449,11 +467,20 @@ export default function SeoAuditSection({ setView }) {
                     <button
                         onClick={() => {
                             playSynthTick(600, 'sine', 0.05, 0.05);
+                            setView('dashboard');
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 text-xs sm:text-sm font-bold transition-all active:scale-95 whitespace-nowrap"
+                    >
+                        <i className="fa-solid fa-arrow-left text-[10px] sm:text-xs"></i>
+                        <span>Dashboard</span>
+                    </button>
+                    <button
+                        onClick={() => {
+                            playSynthTick(600, 'sine', 0.05, 0.05);
                             setView('landing');
                         }}
                         className="relative group overflow-hidden bg-gradient-to-r from-[#ff7b1a] to-amber-500 hover:from-[#e06200] hover:to-amber-400 text-white rounded-full px-4 py-2 sm:px-5 sm:py-2.5 text-[11px] sm:text-sm font-black shadow-[0_0_15px_rgba(255,123,26,0.3)] hover:shadow-[0_0_25px_rgba(255,123,26,0.6)] hover:scale-[1.03] transition-all active:scale-95 duration-200 flex items-center gap-1.5 whitespace-nowrap"
                     >
-                        <i className="fa-solid fa-arrow-left text-[10px] sm:text-xs"></i>
                         <span>Vox Social Score</span>
                     </button>
                     <a href="https://voxlumedia.com" target="_blank" rel="noopener noreferrer" className="hidden md:flex bg-[#191046] border border-white/10 rounded-full px-5 py-2.5 text-xs sm:text-sm font-extrabold hover:bg-white hover:text-black transition-all active:scale-95 duration-200 whitespace-nowrap">
@@ -810,6 +837,15 @@ export default function SeoAuditSection({ setView }) {
                                 className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-full text-xs font-black bg-green-500 hover:bg-green-400 text-[#06021c] transition-all shadow-lg hover:shadow-green-500/20"
                             >
                                 <i className="fa-solid fa-rotate text-xs"></i> New Audit
+                            </button>
+                            <button
+                                onClick={() => {
+                                    playSynthTick(500, 'sine', 0.05, 0.08);
+                                    setView('dashboard');
+                                }}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3 rounded-full text-xs font-bold border border-white/10 hover:border-white hover:bg-white/5 transition-all text-white/80"
+                            >
+                                <i className="fa-solid fa-house text-xs text-white/60"></i> Dashboard
                             </button>
                         </div>
                     </div>

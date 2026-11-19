@@ -26,3 +26,8 @@ dist-ssr
 # Env
 .env
 .env.development
+
+
+# Custom Folder AI
+AI-Guidelines
+AI-Logs

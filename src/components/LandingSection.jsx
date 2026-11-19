@@ -75,13 +75,29 @@ export default function LandingSection({ profileUrl, setProfileUrl, handleAnalyz
             </div>
 
             <header className="absolute top-0 left-0 w-full p-4 sm:p-6 sm:px-12 z-50 flex items-center justify-between">
-                <div className="flex items-center gap-3 font-black text-xl tracking-tight text-white select-none">
+                <div
+                    onClick={() => {
+                        playSynthTick(500, 'sine', 0.05, 0.05);
+                        setView('dashboard');
+                    }}
+                    className="flex items-center gap-3 font-black text-xl tracking-tight text-white select-none cursor-pointer"
+                >
                     <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
                         <img src={LOGO_URL} className="w-full h-full object-contain" alt="Logo" />
                     </div>
                     <span className="hidden sm:block">VOXLUMEDIA</span>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-4">
+                    <button
+                        onClick={() => {
+                            playSynthTick(600, 'sine', 0.05, 0.05);
+                            setView('dashboard');
+                        }}
+                        className="flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white/80 text-xs sm:text-sm font-bold transition-all active:scale-95 whitespace-nowrap"
+                    >
+                        <i className="fa-solid fa-arrow-left text-[10px] sm:text-xs"></i>
+                        <span>Dashboard</span>
+                    </button>
                     <button
                         onClick={() => {
                             playSynthTick(600, 'sine', 0.05, 0.05);
