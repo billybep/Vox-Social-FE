@@ -21,6 +21,15 @@ function App() {
     const [leadData, setLeadData] = useState(null);
     const [webhookStatus, setWebhookStatus] = useState('idle');
 
+    // Role-based Access Control & Bilingual State (Sprint 1)
+    const [userRole, setUserRole] = useState(() => localStorage.getItem('vox_user_role') || 'agency_owner');
+    const [language, setLanguage] = useState(() => localStorage.getItem('vox_language') || 'en');
+
+    useEffect(() => {
+        document.documentElement.lang = language;
+        document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    }, [language]);
+
     // Persist auth session on page reload — redirect to dashboard if already signed in
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -234,6 +243,10 @@ function App() {
                     <DashboardSection
                         setView={setView}
                         analysisResults={analysisResults}
+                        userRole={userRole}
+                        setUserRole={setUserRole}
+                        language={language}
+                        setLanguage={setLanguage}
                     />
                 )}
 
