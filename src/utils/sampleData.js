@@ -223,18 +223,37 @@ export function getActiveClientsList() {
   const list = [...SAMPLE_CLIENTS];
 
   if (realSeo || realSocial) {
-    const domain = realSeo?.domain || (realSocial?.url ? new URL(realSocial.url).hostname : 'verified-client.com');
-    const seoScore = realSeo?.summary?.score || 85;
-    const socialScore = realSocial?.score || (realSocial?.overallScore) || 82;
+    let domain = 'verified-client.com';
+    let brandName = 'Verified Business';
+
+    if (realSeo?.domain) {
+      domain = realSeo.domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+      brandName = domain.replace(/^www\./, '').split('.')[0].toUpperCase();
+    } else if (realSocial?.url) {
+      try {
+        const raw = realSocial.url.startsWith('http') ? realSocial.url : `https://${realSocial.url}`;
+        const u = new URL(raw);
+        const pathParts = u.pathname.split('/').filter(Boolean);
+        const handle = pathParts[0] || u.hostname.replace('www.', '').split('.')[0];
+        brandName = handle.toUpperCase();
+        domain = `${handle.toLowerCase()}.social`;
+      } catch (err) {
+        brandName = (realSocial.url.split('/')[1] || realSocial.url).toUpperCase();
+        domain = 'social-audit.com';
+      }
+    }
+
+    const seoScore = realSeo?.overall_score ?? realSeo?.summary?.score ?? (realSocial ? 75 : 85);
+    const socialScore = realSocial?.score ?? realSocial?.overallScore ?? realSocial?.categories?.businessReadiness ?? (realSeo ? 78 : 82);
     const overallScore = Math.round((seoScore * 0.55) + (socialScore * 0.45));
 
     const realClient = {
       id: 'live-scanned-client',
-      name: domain.replace('www.', '').split('.')[0].toUpperCase() + " (Live Scan)",
+      name: `${brandName} (Live Scan)`,
       domain: domain,
-      industry: "Audited Entity",
-      locations: [{ name: "Headquarters", country: "Global", city: "Online", isPrimary: true }],
-      lastAudit: new Date().toISOString().split('T')[0],
+      industry: realSocial?.fullData?.profileIdentity || "Audited Entity",
+      locations: [{ name: "Primary Location", country: "Global", city: "Online", isPrimary: true }],
+      lastAudit: realSeo?.date || realSocial?.date || new Date().toISOString().split('T')[0],
       isReal: true,
       overallScore: overallScore,
       evidenceCoverage: 96,
@@ -256,11 +275,51 @@ export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSoc
 
   const hasRealSeo = !!effectiveSeo && (activeClient?.isReal || (!activeClient?.isReal && effectiveSeo));
   const hasRealSocial = !!effectiveSocial && (activeClient?.isReal || (!activeClient?.isReal && effectiveSocial));
-  const isRealScore = hasRealSeo || hasRealSocial;
+  const isRealScore = hasRealSeo || hasRealSocial || !!activeClient?.isReal;
 
-  const seoScore = hasRealSeo ? (effectiveSeo.summary?.score || 85) : (activeClient?.seoScore || 78);
-  const socialScore = hasRealSocial ? (effectiveSocial.score || effectiveSocial.overallScore || 82) : (activeClient?.socialScore || 82);
+  const seoScore = hasRealSeo ? (effectiveSeo?.overall_score ?? effectiveSeo?.summary?.score ?? 85) : (activeClient?.seoScore || 78);
+  const socialScore = hasRealSocial ? (effectiveSocial?.score ?? effectiveSocial?.overallScore ?? 82) : (activeClient?.socialScore || 82);
   const overallScore = isRealScore ? Math.round((seoScore * 0.55) + (socialScore * 0.45)) : (activeClient?.overallScore || 71);
+
+  // Dynamic real findings when real scan data exists
+  let customFindings = SAMPLE_AUDIT_DATA.highPriorityFindings;
+  if (isRealScore) {
+    customFindings = [];
+    if (hasRealSeo) {
+      customFindings.push({
+        id: 'real-seo-1',
+        title: `Technical SEO Crawl Complete for ${effectiveSeo?.domain || activeClient?.domain}`,
+        category: "VoxSEO",
+        severity: (seoScore >= 80 ? "watch" : "critical"),
+        impact: `Overall Score: ${seoScore}/100 (Grade ${effectiveSeo?.overall_grade || 'C'})`,
+        evidenceType: "measured",
+        source: "Multi-Node SEO Crawler",
+        date: effectiveSeo?.date || new Date().toLocaleDateString(),
+        description: `Live automated diagnostic completed with ${seoScore} overall health score. Core web vitals and on-page metadata inspected.`,
+        recommendation: "Review the full 51-point checklist in VoxSEO Technical Scorecard to resolve high-priority warnings."
+      });
+    }
+    if (hasRealSocial) {
+      const strengths = effectiveSocial?.fullData?.strengths || effectiveSocial?.strengths || [];
+      const opportunities = effectiveSocial?.fullData?.opportunities || effectiveSocial?.opportunities || [];
+      customFindings.push({
+        id: 'real-social-1',
+        title: `Multimodal Social Readiness Analyzed for ${effectiveSocial?.url || activeClient?.name}`,
+        category: "VoxSocial",
+        severity: (socialScore >= 80 ? "watch" : "needsWork"),
+        impact: `Social Authority: ${socialScore}/100 (${effectiveSocial?.label || 'Analyzed'})`,
+        evidenceType: "measured",
+        source: "Gemini AI Vision & Content Engine",
+        date: effectiveSocial?.date || new Date().toLocaleDateString(),
+        description: opportunities[0] || "Bio clarity, visual identity, and customer conversion pathways analyzed by Gemini multimodal AI.",
+        recommendation: strengths[0] ? `Maintain strength: ${strengths[0]}` : "Optimize bio call-to-action to increase direct visitor conversion."
+      });
+    }
+    // Fill remaining findings from sample to maintain 4-card matrix
+    SAMPLE_AUDIT_DATA.highPriorityFindings.slice(customFindings.length).forEach((f, i) => {
+      customFindings.push({ ...f, id: `hybrid-f-${i}` });
+    });
+  }
 
   return {
     client: activeClient || SAMPLE_CLIENTS[0],
@@ -272,9 +331,10 @@ export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSoc
     socialScore,
     aiScore: activeClient?.aiScore || 64,
     croScore: activeClient?.croScore || 58,
-    domain: activeClient?.domain || (effectiveSeo?.domain || 'cedarandcodental.com'),
+    domain: activeClient?.domain || effectiveSeo?.domain || 'cedarandcodental.com',
     evidenceCoverage: isRealScore ? 96 : (activeClient?.evidenceCoverage || 87),
     effectiveSeo,
-    effectiveSocial
+    effectiveSocial,
+    customFindings
   };
 }

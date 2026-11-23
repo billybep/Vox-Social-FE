@@ -351,13 +351,13 @@ export default function WorkspaceDashboard({
                   <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 font-bold text-slate-800">
-                        <span>{comp.name}</span>
+                        <span>{comp.isSelf ? diag.client.name : comp.name}</span>
                         {comp.isSelf && (
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-brand-blue uppercase">
                             Target
                           </span>
                         )}
-                        <span className="text-slate-400 font-normal">· {comp.note}</span>
+                        <span className="text-slate-400 font-normal">· {comp.isSelf ? diag.domain : comp.note}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <EvidenceTag type={comp.evidenceType} />
@@ -399,7 +399,7 @@ export default function WorkspaceDashboard({
               </div>
 
               <div className="divide-y divide-slate-100">
-                {auditData.highPriorityFindings.map((finding) => (
+                {(diag.customFindings || auditData.highPriorityFindings).map((finding) => (
                   <div key={finding.id} className="py-4 first:pt-2 last:pb-0 space-y-2">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap">
