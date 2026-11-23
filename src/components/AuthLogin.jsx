@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../utils/firebase';
 
-const LOGO_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/vsllogo.png";
+const LOGO_URL = "/New_Logo_Voxlumedia.webp";
 
 export default function AuthLogin({ setView }) {
     const [showEmailForm, setShowEmailForm] = useState(false);
@@ -120,7 +120,7 @@ export default function AuthLogin({ setView }) {
                     <div className="relative z-10 flex items-center gap-3">
                         <img src={LOGO_URL} alt="Logo" className="w-10 h-10 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
                         <div className="flex flex-col">
-                            <span className="text-white font-black text-2xl tracking-tight leading-none">VOXAUDIT</span>
+                            <span className="text-white font-black text-2xl tracking-tight leading-none">VOX INTELLIGENCE</span>
                             <span className="text-white/50 text-[10px] font-bold tracking-widest uppercase mt-1">by Voxlumedia</span>
                         </div>
                     </div>

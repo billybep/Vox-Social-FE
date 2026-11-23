@@ -9,12 +9,28 @@ import { auth } from './utils/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { playSynthTick } from './utils/audio';
 
+// =============================================================================
+// DEV / TESTING CONFIGURATION:
+// Set to `true` to FORCE UNLOCK the 14-day trial (all tools accessible for testing)
+// Set to `false` to enforce standard 14-day trial expiration
+// =============================================================================
+export const DEV_FORCE_UNLOCK_TRIAL = true;
+
 function App() {
     const [view, setView] = useState('login');
     const [profileUrl, setProfileUrl] = useState('');
     const [inputError, setInputError] = useState('');
     const [analyzingStep, setAnalyzingStep] = useState(0);
     const [analysisResults, setAnalysisResults] = useState(null);
+    const [seoAuditData, setSeoAuditData] = useState(null);
+
+    // --- 14-Day Trial System ---
+    const [isTrialExpired, setIsTrialExpired] = useState(false);
+    const [trialDaysLeft, setTrialDaysLeft] = useState(14);
+
+    // Effective trial values (overridden when DEV_FORCE_UNLOCK_TRIAL is true)
+    const activeTrialExpired = DEV_FORCE_UNLOCK_TRIAL ? false : isTrialExpired;
+    const activeTrialDaysLeft = DEV_FORCE_UNLOCK_TRIAL ? 14 : trialDaysLeft;
 
     const [isAiComplete, setIsAiComplete] = useState(false);
     const [isFormSubmitted, setIsFormSubmitted] = useState(false);
@@ -22,10 +38,31 @@ function App() {
     const [webhookStatus, setWebhookStatus] = useState('idle');
 
     // Persist auth session on page reload — redirect to dashboard if already signed in
+    // Also compute trial status on every auth state change
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            if (user && view === 'login') {
-                setView('dashboard');
+            if (user) {
+                // --- Trial computation ---
+                let trialStart;
+                if (user.metadata && user.metadata.creationTime) {
+                    trialStart = new Date(user.metadata.creationTime);
+                } else {
+                    const stored = localStorage.getItem('vox_trial_start');
+                    trialStart = stored ? new Date(stored) : new Date();
+                }
+                // Persist trial start date
+                if (!localStorage.getItem('vox_trial_start')) {
+                    localStorage.setItem('vox_trial_start', trialStart.toISOString());
+                }
+                const msElapsed = Date.now() - trialStart.getTime();
+                const daysUsed = Math.floor(msElapsed / (1000 * 60 * 60 * 24));
+                const remaining = Math.max(0, 14 - daysUsed);
+                setTrialDaysLeft(remaining);
+                setIsTrialExpired(remaining <= 0);
+
+                if (view === 'login') {
+                    setView('dashboard');
+                }
             }
         });
         return () => unsubscribe();
@@ -68,6 +105,12 @@ function App() {
     const handleAnalyze = async (e) => {
         e.preventDefault();
         setInputError('');
+
+        if (activeTrialExpired) {
+            playSynthTick(150, 'sawtooth', 0.2, 0.08);
+            setInputError("Your 14-day free trial has expired. Scanning service is locked. Contact Voxlumedia to continue.");
+            return;
+        }
 
         const url = profileUrl.trim();
         if (!url) return;
@@ -142,7 +185,8 @@ function App() {
                     score: mappedData.score,
                     label: mappedData.label,
                     platform: detectPlatform(url),
-                    date: new Date().toLocaleDateString()
+                    date: new Date().toLocaleDateString(),
+                    details: mappedData
                 };
                 localStorage.setItem('vox_last_social', JSON.stringify(lastSocialData));
             } catch (e) {
@@ -162,7 +206,7 @@ function App() {
     const handleContactSubmit = (formData) => {
         setLeadData(formData);
         setIsFormSubmitted(true);
-    };    useEffect(() => {
+    }; useEffect(() => {
         if (isFormSubmitted && webhookStatus === 'idle') {
             if (isAiComplete) {
                 const sendWebhook = async () => {
@@ -234,6 +278,9 @@ function App() {
                     <DashboardSection
                         setView={setView}
                         analysisResults={analysisResults}
+                        seoAuditData={seoAuditData}
+                        isTrialExpired={activeTrialExpired}
+                        trialDaysLeft={activeTrialDaysLeft}
                     />
                 )}
 
@@ -245,11 +292,16 @@ function App() {
                         inputError={inputError}
                         setInputError={setInputError}
                         setView={setView}
+                        isTrialExpired={activeTrialExpired}
                     />
                 )}
 
                 {view === 'seo_audit' && (
-                    <SeoAuditSection setView={setView} />
+                    <SeoAuditSection
+                        setView={setView}
+                        setSeoAuditData={setSeoAuditData}
+                        isTrialExpired={activeTrialExpired}
+                    />
                 )}
 
                 {view === 'loading' && (

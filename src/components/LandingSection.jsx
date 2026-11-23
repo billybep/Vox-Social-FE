@@ -5,9 +5,9 @@ import { playSynthTick } from '../utils/audio';
 import LogoutModal from './LogoutModal';
 
 const MASCOT_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/ryanvox.png";
-const LOGO_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/vsllogo.png";
+const LOGO_URL = "/New_Logo_Voxlumedia.webp";
 
-export default function LandingSection({ profileUrl, setProfileUrl, handleAnalyze, inputError, setInputError, setView }) {
+export default function LandingSection({ profileUrl, setProfileUrl, handleAnalyze, inputError, setInputError, setView, isTrialExpired }) {
     const mascotRef = useRef(null);
     const [mascotBubbleText, setMascotBubbleText] = useState("Hey there! Ready to grade your profile?");
     const [bubbleClickCount, setBubbleClickCount] = useState(0);
@@ -197,6 +197,34 @@ export default function LandingSection({ profileUrl, setProfileUrl, handleAnalyz
                         </div>
 
                         <form onSubmit={handleAnalyze} className="relative w-full max-w-[650px] mx-auto lg:mx-0 space-y-4 pt-2">
+                            {isTrialExpired && (
+                                <div className="absolute inset-0 z-40 bg-[#06021c]/90 backdrop-blur-md rounded-2xl border border-rose-500/30 p-6 flex flex-col items-center justify-center text-center gap-3 animate-fade-in shadow-2xl">
+                                    <div className="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 text-xl">
+                                        <i className="fa-solid fa-lock"></i>
+                                    </div>
+                                    <h4 className="text-lg font-black text-white">14-Day Free Trial Expired</h4>
+                                    <p className="text-xs text-white/60 max-w-sm">
+                                        Your VoxSocial scanning access has ended. Contact Voxlumedia to unlock full service access.
+                                    </p>
+                                    <div className="flex items-center gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setView('dashboard')}
+                                            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition-all"
+                                        >
+                                            ← Return to Dashboard
+                                        </button>
+                                        <a
+                                            href="https://voxlumedia.com"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-5 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-black transition-all shadow-lg"
+                                        >
+                                            Contact Voxlumedia →
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="flex flex-col sm:flex-row gap-2.5 bg-white/5 p-2 rounded-2xl border border-white/15 backdrop-blur-xl shadow-2xl relative transition-all duration-300 focus-within:border-[#ff7b1a]">
                                 <div className="relative flex-grow flex items-center px-4">

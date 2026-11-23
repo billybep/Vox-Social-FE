@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { auth } from '../utils/firebase';
 
-const LOGO_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/vsllogo.png";
+const LOGO_URL = "/New_Logo_Voxlumedia.webp";
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
 export default function ResultsSection({ results, url, platform, setView }) {

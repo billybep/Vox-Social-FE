@@ -4,11 +4,11 @@ import { auth } from '../utils/firebase';
 import { playSynthTick } from '../utils/audio';
 import LogoutModal from './LogoutModal';
 
-const LOGO_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/vsllogo.png";
+const LOGO_URL = "/New_Logo_Voxlumedia.webp";
 const MASCOT_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/ryanvox.png";
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
-export default function SeoAuditSection({ setView }) {
+export default function SeoAuditSection({ setView, setSeoAuditData, isTrialExpired }) {
     const mascotRef = useRef(null);
     const [domain, setDomain] = useState('');
     const [businessName, setBusinessName] = useState('');
@@ -96,6 +96,12 @@ export default function SeoAuditSection({ setView }) {
     const handleAuditSubmit = async (e) => {
         e.preventDefault();
         setError('');
+
+        if (isTrialExpired) {
+            setError('Your 14-day free trial has expired. Scanning service is locked. Contact Voxlumedia to continue.');
+            playSynthTick(160, 'sawtooth', 0.25, 0.15);
+            return;
+        }
 
         const val = domain.trim();
         if (!val) {
@@ -203,13 +209,20 @@ export default function SeoAuditSection({ setView }) {
             setAuditData(data);
             setResultsDomain(cleanDomain);
 
+            if (setSeoAuditData) {
+                setSeoAuditData(data);
+            }
+
             // Save snapshot to localStorage for dashboard
             try {
                 const lastSeoData = {
                     domain: cleanDomain,
                     overall_score: data.overall_score ?? 78,
                     overall_grade: data.overall_grade || 'C',
-                    date: new Date().toLocaleDateString()
+                    date: new Date().toLocaleDateString(),
+                    breakdown: data.breakdown || {},
+                    advanced: data.advanced || {},
+                    checks: data.checks || {}
                 };
                 localStorage.setItem('vox_last_seo', JSON.stringify(lastSeoData));
             } catch (e) {
@@ -680,6 +693,34 @@ export default function SeoAuditSection({ setView }) {
 
                             {/* Input form */}
                             <div className="relative w-full max-w-[650px] mx-auto lg:mx-0 space-y-4 pt-2">
+                                {isTrialExpired && (
+                                    <div className="absolute inset-0 z-40 bg-[#06021c]/90 backdrop-blur-md rounded-2xl border border-rose-500/30 p-6 flex flex-col items-center justify-center text-center gap-3 animate-fade-in shadow-2xl">
+                                        <div className="w-12 h-12 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center text-rose-400 text-xl">
+                                            <i className="fa-solid fa-lock"></i>
+                                        </div>
+                                        <h4 className="text-lg font-black text-white">14-Day Free Trial Expired</h4>
+                                        <p className="text-xs text-white/60 max-w-sm">
+                                            Your VoxAudit scanning access has ended. Historical reports remain viewable. Contact Voxlumedia to unlock full service access.
+                                        </p>
+                                        <div className="flex items-center gap-3 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setView('dashboard')}
+                                                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition-all"
+                                            >
+                                                ← Return to Dashboard
+                                            </button>
+                                            <a
+                                                href="https://voxlumedia.com"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="px-5 py-2 rounded-xl bg-rose-500 hover:bg-rose-400 text-white text-xs font-black transition-all shadow-lg"
+                                            >
+                                                Contact Voxlumedia →
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
                                 <form onSubmit={handleAuditSubmit} className="flex flex-col sm:flex-row gap-2.5 bg-white/5 p-2 rounded-2xl border border-white/15 backdrop-blur-xl shadow-2xl relative transition-all duration-300 focus-within:border-green-400">
                                     <div className="relative flex-grow flex items-center px-4">
                                         <span className={`transition-colors duration-300 text-xl font-mono ${domain ? 'seo-accent-text font-black' : 'text-white/40'}`}>@</span>
