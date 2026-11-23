@@ -28,6 +28,16 @@ function App() {
     const [isTrialExpired, setIsTrialExpired] = useState(false);
     const [trialDaysLeft, setTrialDaysLeft] = useState(14);
 
+    // --- Role and Language States (Sprint 1 Architecture) ---
+    // Supported roles: 'agency' | 'consultant' | 'business'
+    const [userRole, setUserRole] = useState(() => localStorage.getItem('vox_user_role') || 'agency');
+    const [language, setLanguage] = useState(() => localStorage.getItem('vox_language') || 'en');
+
+    useEffect(() => {
+        document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+        document.documentElement.lang = language;
+    }, [language]);
+
     // Effective trial values (overridden when DEV_FORCE_UNLOCK_TRIAL is true)
     const activeTrialExpired = DEV_FORCE_UNLOCK_TRIAL ? false : isTrialExpired;
     const activeTrialDaysLeft = DEV_FORCE_UNLOCK_TRIAL ? 14 : trialDaysLeft;
@@ -281,6 +291,10 @@ function App() {
                         seoAuditData={seoAuditData}
                         isTrialExpired={activeTrialExpired}
                         trialDaysLeft={activeTrialDaysLeft}
+                        userRole={userRole}
+                        setUserRole={setUserRole}
+                        language={language}
+                        setLanguage={setLanguage}
                     />
                 )}
 
