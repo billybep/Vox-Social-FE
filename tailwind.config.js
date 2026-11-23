@@ -6,56 +6,65 @@ export default {
   ],
   theme: {
     extend: {
-        colors: {
-            cyber: {
-                bg: '#06021c', // Background gelap pekat solid
-                bgLight: '#0d0735',
-                accent: '#ff007f', // hot pink solid
-                neonBlue: '#00f0ff', // cyan solid
-                gold: '#ffb800', // bintang emas
-                purpleGlow: '#6c22ff',
-                orangeSolid: '#ff7b1a' // Orange tombol solid
-            }
+      colors: {
+        brand: {
+          shell: '#0A0B10',       // Dark Brand Shell Background
+          shellCard: '#12141F',   // Elevated shell surface
+          shellBorder: '#1E2235', // Subtle dark border
+          canvas: '#F8FAFC',      // Off-white light analysis canvas
+          card: '#FFFFFF',        // Pure white report cards
+          blue: '#0094ea',        // Primary action / links / active focus (never for scores)
+          magenta: '#cf41b2',     // AI Interpretation marker (never for decoration)
+          cyan: '#00e5ff',        // Dark shell highlight (never on white canvas)
+          violet: '#7c3aed',      // Secondary gradient partner for logo CTA
         },
-        fontFamily: {
-            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
-            brush: ['Caveat Brush', 'Caveat', 'cursive'],
+        status: {
+          critical: '#dc2626',    // Finding severity / Score band 0-49
+          needsWork: '#d97706',   // Score band 50-69
+          solid: '#2563eb',       // Score band 70-84
+          strong: '#16a34a',      // Score band 85-100
         },
-        animation: {
-            'float': 'float 6s ease-in-out infinite',
-            'float-delayed': 'floatSlow 8s ease-in-out infinite',
-            'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
-            'spin-slow': 'spin 20s linear infinite',
-            'spin-reverse': 'spinReverse 25s linear infinite',
-            'radar-sweep': 'radarSweep 4s linear infinite',
-            'soft-shadow': 'softShadow 4s ease-in-out infinite',
-        },
-        keyframes: {
-            float: {
-                '0%, 100%': { transform: 'translateY(0px)' },
-                '50%': { transform: 'translateY(-12px)' },
-            },
-            floatSlow: {
-                '0%, 100%': { transform: 'translate(0px, 0px) rotate(0deg)' },
-                '50%': { transform: 'translate(10px, -15px) rotate(3deg)' },
-            },
-            fadeInUp: {
-                '0%': { opacity: '0', transform: 'translateY(20px)' },
-                '100%': { opacity: '1', transform: 'translateY(0)' },
-            },
-            spinReverse: {
-                '0%': { transform: 'rotate(360deg)' },
-                '100%': { transform: 'rotate(0deg)' }
-            },
-            radarSweep: {
-                '0%': { transform: 'rotate(0deg)' },
-                '100%': { transform: 'rotate(360deg)' }
-            },
-            softShadow: {
-                '0%, 100%': { boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01)' },
-                '50%': { boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)' }
-            }
+        cyber: {
+          bg: '#06021c',
+          bgLight: '#0d0735',
+          accent: '#ff007f',
+          neonBlue: '#00f0ff',
+          gold: '#ffb800',
+          purpleGlow: '#6c22ff',
+          orangeSolid: '#ff7b1a'
         }
+      },
+      fontFamily: {
+        sans: ['Inter', 'Plus Jakarta Sans', 'sans-serif'],
+        display: ['Montserrat', 'sans-serif'],
+        arabic: ['IBM Plex Sans Arabic', 'sans-serif'],
+        brush: ['Caveat Brush', 'Caveat', 'cursive'],
+      },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'float-delayed': 'floatSlow 8s ease-in-out infinite',
+        'fade-in': 'fadeIn 0.4s ease-out forwards',
+        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+        'spin-slow': 'spin 20s linear infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
+        floatSlow: {
+          '0%, 100%': { transform: 'translate(0px, 0px) rotate(0deg)' },
+          '50%': { transform: 'translate(10px, -15px) rotate(3deg)' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        fadeInUp: {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      }
     }
   },
   plugins: [],

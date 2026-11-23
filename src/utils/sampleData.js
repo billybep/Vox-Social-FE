@@ -1,0 +1,280 @@
+// Fictional sample client and competitive benchmark dataset
+// Aligned with AI-Guidelines/VA-Intelligence-Design.md
+
+export const SAMPLE_CLIENTS = [
+  {
+    id: 'cedar-dental',
+    name: "Cedar & Co. Dental",
+    domain: "cedarandcodental.com",
+    industry: "Healthcare & Cosmetic Dentistry",
+    locations: [
+      { name: "Amman Clinic", country: "Jordan", city: "Amman", isPrimary: true },
+      { name: "Fairfax Clinic", country: "USA", city: "Fairfax, VA", isPrimary: false },
+    ],
+    lastAudit: "2026-11-20",
+    isReal: false,
+    overallScore: 71,
+    evidenceCoverage: 87, // 87% coverage
+    seoScore: 78,
+    socialScore: 82,
+    aiScore: 64,
+    croScore: 58,
+  },
+  {
+    id: 'nordic-apex',
+    name: "Nordic Apex Logistics",
+    domain: "nordicapex.io",
+    industry: "Freight & Supply Chain",
+    locations: [{ name: "Dubai Logistics Hub", country: "UAE", city: "Dubai", isPrimary: true }],
+    lastAudit: "2026-11-18",
+    isReal: false,
+    overallScore: 64,
+    evidenceCoverage: 76,
+    seoScore: 69,
+    socialScore: 58,
+    aiScore: 70,
+    croScore: 60,
+  },
+  {
+    id: 'sultan-perfumes',
+    name: "Sultan Oud & Fragrances",
+    domain: "sultanoud.sa",
+    industry: "Luxury Retail & E-Commerce",
+    locations: [{ name: "Riyadh Flagship", country: "Saudi Arabia", city: "Riyadh", isPrimary: true }],
+    lastAudit: "2026-11-15",
+    isReal: false,
+    overallScore: 85,
+    evidenceCoverage: 92,
+    seoScore: 88,
+    socialScore: 91,
+    aiScore: 80,
+    croScore: 82,
+  }
+];
+
+export const SAMPLE_AUDIT_DATA = {
+  client: SAMPLE_CLIENTS[0],
+  locations: [
+    { id: 'loc-1', name: 'Amman Clinic (Jordan)', address: '5th Circle, Zahran St, Amman', status: 'Healthy' },
+    { id: 'loc-2', name: 'Fairfax Clinic (VA, USA)', address: '10440 Main St, Fairfax, VA 22030', status: 'Action Needed' }
+  ],
+  pillars: {
+    seo: {
+      score: 78,
+      band: 'Solid',
+      evidenceType: 'measured',
+      source: 'Multi-Node Crawler (SEOptimer Core)',
+      period: 'Last 7 Days',
+      definition: 'Composite health of crawlability, technical Core Web Vitals, metadata indexing, and localized dental keyword visibility.',
+      measuredPoints: 47,
+      totalPoints: 51,
+    },
+    social: {
+      score: 82,
+      band: 'Solid',
+      evidenceType: 'measured',
+      source: 'Gemini AI Multimodal Analyzer',
+      period: 'Last 30 Days',
+      definition: 'Evaluation of Instagram & Facebook visual branding, patient testimonial proof, bio call-to-actions, and appointment conversion pathways.',
+      measuredPoints: 24,
+      totalPoints: 25,
+    },
+    ai: {
+      score: 64,
+      band: 'Needs Work',
+      evidenceType: 'estimated',
+      source: 'LLM Discovery Matrix (ChatGPT, Perplexity, Gemini)',
+      period: 'Estimated Simulation',
+      definition: 'Frequency and citation accuracy with which generative assistants recommend this practice for regional dental queries.',
+      measuredPoints: 8,
+      totalPoints: 12,
+    },
+    cro: {
+      score: 58,
+      band: 'Needs Work',
+      evidenceType: 'ai',
+      source: 'AI Synthesis from UX & Booking Funnel Inspection',
+      period: 'Current Run',
+      definition: 'Friction analysis across mobile patient booking steps, phone inquiry click-throughs, and consultation forms.',
+      measuredPoints: 6,
+      totalPoints: 10,
+    },
+    analyticsSync: {
+      score: null, // unavailable state
+      statusText: 'N/A',
+      evidenceType: 'unavailable',
+      source: 'Google Analytics 4 API',
+      reason: 'OAuth token pending client consent in Client Portal.',
+      definition: 'Direct first-party patient conversion rates and session duration tracking.',
+    }
+  },
+  competitors: [
+    {
+      name: "Cedar & Co. Dental",
+      score: 71,
+      isSelf: true,
+      seo: 78,
+      social: 82,
+      ai: 64,
+      evidenceType: 'measured',
+      note: 'Target Practice'
+    },
+    {
+      name: "Apex Dental Studio",
+      score: 84,
+      isSelf: false,
+      seo: 86,
+      social: 88,
+      ai: 78,
+      evidenceType: 'measured',
+      note: 'Leading in Amman Cosmetic Search'
+    },
+    {
+      name: "Pearl White Care",
+      score: 73,
+      isSelf: false,
+      seo: 74,
+      social: 76,
+      ai: 68,
+      evidenceType: 'estimated',
+      note: 'Third-party modeled estimate'
+    },
+    {
+      name: "SmileCraft Clinic",
+      score: 61,
+      isSelf: false,
+      seo: 65,
+      social: 60,
+      ai: 58,
+      evidenceType: 'estimated',
+      note: 'Third-party modeled estimate'
+    }
+  ],
+  highPriorityFindings: [
+    {
+      id: 'f-101',
+      title: "Local Schema Missing for Amman Branch Location",
+      category: "VoxSEO",
+      severity: "critical",
+      impact: "High Impact · +14% Local Map Pack Reach",
+      evidenceType: "measured",
+      source: "SEOptimer HTML Parser",
+      date: "2026-11-20",
+      description: "Amman clinic subpage lacks MedicalClinic and GeoCoordinates structured data, causing Google Maps to rank competing dental studios higher in Abdoun and 5th Circle queries.",
+      recommendation: "Inject JSON-LD MedicalBusiness schema specifying localized opening hours, latitude/longitude, and bilingual Arabic address."
+    },
+    {
+      id: 'f-102',
+      title: "Instagram Bio Directs to Non-Mobile Responsive Form",
+      category: "VoxSocial",
+      severity: "needsWork",
+      impact: "Medium Impact · Est. 22% Drop-off Rate",
+      evidenceType: "measured",
+      source: "Gemini Social Engine",
+      date: "2026-11-20",
+      description: "Bio link leads directly to a desktop PDF intake form rather than a streamlined WhatsApp or mobile booking portal.",
+      recommendation: "Implement an instant WhatsApp direct-booking button with pre-filled dental consultation parameters."
+    },
+    {
+      id: 'f-103',
+      title: "Perplexity Pro Recommends Competitor for 'Fairfax Cosmetic Dentistry'",
+      category: "VoxAI Visibility",
+      severity: "watch",
+      impact: "Emerging Risk · AI Search Visibility",
+      evidenceType: "estimated",
+      source: "LLM Probe Query Engine",
+      date: "2026-11-19",
+      description: "In generative queries for Northern Virginia porcelain veneers, Perplexity cites Apex Dental due to stronger authoritative citations on WebMD and Healthgrades.",
+      recommendation: "Claim verified practice profiles on Healthgrades, Vitals, and local Fairfax medical directories."
+    },
+    {
+      id: 'f-104',
+      title: "Untracked WhatsApp Direct Booking Clicks in Patient Journey",
+      category: "Journey & CRO",
+      severity: "info",
+      impact: "Optimization · Patient Conversion Tracking",
+      evidenceType: "ai",
+      source: "AI Synthesis from Funnel Analysis",
+      date: "2026-11-20",
+      description: "Arabic mobile users predominantly convert via WhatsApp, but events lack UTM campaign tagging to measure marketing ROI.",
+      recommendation: "Wrap WhatsApp redirect buttons in custom Google Tag Manager click events with UTM parameters."
+    }
+  ]
+};
+
+// Check for live scan snapshots from SEOptimer and Gemini
+export function getStoredRealScans() {
+  let realSeo = null;
+  let realSocial = null;
+  try {
+    const sSeo = localStorage.getItem('vox_last_seo');
+    const sSocial = localStorage.getItem('vox_last_social');
+    if (sSeo) realSeo = JSON.parse(sSeo);
+    if (sSocial) realSocial = JSON.parse(sSocial);
+  } catch (e) {
+    // ignore parse error
+  }
+  return { realSeo, realSocial };
+}
+
+// Compute active clients list dynamically (auto-inserting verified real scan if present)
+export function getActiveClientsList() {
+  const { realSeo, realSocial } = getStoredRealScans();
+  const list = [...SAMPLE_CLIENTS];
+
+  if (realSeo || realSocial) {
+    const domain = realSeo?.domain || (realSocial?.url ? new URL(realSocial.url).hostname : 'verified-client.com');
+    const seoScore = realSeo?.summary?.score || 85;
+    const socialScore = realSocial?.score || (realSocial?.overallScore) || 82;
+    const overallScore = Math.round((seoScore * 0.55) + (socialScore * 0.45));
+
+    const realClient = {
+      id: 'live-scanned-client',
+      name: domain.replace('www.', '').split('.')[0].toUpperCase() + " (Live Scan)",
+      domain: domain,
+      industry: "Audited Entity",
+      locations: [{ name: "Headquarters", country: "Global", city: "Online", isPrimary: true }],
+      lastAudit: new Date().toISOString().split('T')[0],
+      isReal: true,
+      overallScore: overallScore,
+      evidenceCoverage: 96,
+      seoScore: seoScore,
+      socialScore: socialScore,
+      aiScore: 78,
+      croScore: 72,
+    };
+    list.unshift(realClient);
+  }
+
+  return list;
+}
+
+export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSocial = null) {
+  const { realSeo: storedSeo, realSocial: storedSocial } = getStoredRealScans();
+  const effectiveSeo = runtimeSeo || storedSeo;
+  const effectiveSocial = runtimeSocial || storedSocial;
+
+  const hasRealSeo = !!effectiveSeo && (activeClient?.isReal || (!activeClient?.isReal && effectiveSeo));
+  const hasRealSocial = !!effectiveSocial && (activeClient?.isReal || (!activeClient?.isReal && effectiveSocial));
+  const isRealScore = hasRealSeo || hasRealSocial;
+
+  const seoScore = hasRealSeo ? (effectiveSeo.summary?.score || 85) : (activeClient?.seoScore || 78);
+  const socialScore = hasRealSocial ? (effectiveSocial.score || effectiveSocial.overallScore || 82) : (activeClient?.socialScore || 82);
+  const overallScore = isRealScore ? Math.round((seoScore * 0.55) + (socialScore * 0.45)) : (activeClient?.overallScore || 71);
+
+  return {
+    client: activeClient || SAMPLE_CLIENTS[0],
+    isRealScore,
+    hasRealSeo,
+    hasRealSocial,
+    overallScore,
+    seoScore,
+    socialScore,
+    aiScore: activeClient?.aiScore || 64,
+    croScore: activeClient?.croScore || 58,
+    domain: activeClient?.domain || (effectiveSeo?.domain || 'cedarandcodental.com'),
+    evidenceCoverage: isRealScore ? 96 : (activeClient?.evidenceCoverage || 87),
+    effectiveSeo,
+    effectiveSocial
+  };
+}
