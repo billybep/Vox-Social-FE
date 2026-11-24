@@ -220,14 +220,21 @@ export function getStoredRealScans() {
   return { realSeo, realSocial, realUnified };
 }
 
-// Compute active clients list dynamically (auto-inserting verified real scan if present)
-export function getActiveClientsList() {
+// Compute active clients list dynamically (auto-inserting verified real scan or user workspace if present)
+export function getActiveClientsList(user = null) {
   const { realSeo, realSocial, realUnified } = getStoredRealScans();
   const list = [...SAMPLE_CLIENTS];
 
+  // Check if user has saved a custom business profile
+  let customProfile = null;
+  try {
+    const raw = localStorage.getItem('vox_business_profile');
+    if (raw) customProfile = JSON.parse(raw);
+  } catch (e) {}
+
   if (realSeo || realSocial || realUnified) {
-    let domain = realUnified?.domain || 'verified-client.com';
-    let brandName = realUnified?.brandName || 'Verified Business';
+    let domain = realUnified?.domain || customProfile?.domain || 'verified-client.com';
+    let brandName = realUnified?.brandName || customProfile?.brandName || 'Verified Business';
 
     if (realSeo?.domain) {
       domain = realSeo.domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
@@ -257,8 +264,8 @@ export function getActiveClientsList() {
       id: 'live-scanned-client',
       name: `${brandName} (Live Scan)`,
       domain: domain,
-      industry: realSocial?.fullData?.profileIdentity || "Audited Entity",
-      locations: [{ name: "Primary Location", country: "Global", city: "Online", isPrimary: true }],
+      industry: customProfile?.industry || realSocial?.fullData?.profileIdentity || "Audited Entity",
+      locations: customProfile?.locations || [{ name: "Primary Location", country: "Global", city: "Online", isPrimary: true }],
       lastAudit: realSeo?.date || realSocial?.date || realUnified?.date || new Date().toISOString().split('T')[0],
       isReal: true,
       overallScore: overallScore,
@@ -269,6 +276,45 @@ export function getActiveClientsList() {
       croScore: 72,
     };
     list.unshift(realClient);
+  } else if (customProfile?.brandName) {
+    const savedClient = {
+      id: 'saved-workspace-client',
+      name: customProfile.brandName,
+      domain: customProfile.domain || '',
+      industry: customProfile.industry || "Digital Marketing & Growth",
+      locations: customProfile.locations || [{ name: "Headquarters", country: "Global", city: "Online", isPrimary: true }],
+      lastAudit: "Not audited yet",
+      isReal: true,
+      isDraft: !!customProfile.isDraft,
+      overallScore: 0,
+      evidenceCoverage: 0,
+      seoScore: 0,
+      socialScore: 0,
+      aiScore: 0,
+      croScore: 0,
+    };
+    list.unshift(savedClient);
+  } else if (user) {
+    const userDisplayName = user?.displayName || (user?.email ? user.email.split('@')[0] : null);
+    if (userDisplayName) {
+      const userDraftClient = {
+        id: 'user-primary-workspace',
+        name: `${userDisplayName} Workspace`,
+        domain: '',
+        industry: "Digital Marketing & Growth",
+        locations: [{ name: "Headquarters", country: "Global", city: "Online", isPrimary: true }],
+        lastAudit: "Setup Needed",
+        isReal: true,
+        isDraft: true,
+        overallScore: 0,
+        evidenceCoverage: 0,
+        seoScore: 0,
+        socialScore: 0,
+        aiScore: 0,
+        croScore: 0,
+      };
+      list.unshift(userDraftClient);
+    }
   }
 
   return list;

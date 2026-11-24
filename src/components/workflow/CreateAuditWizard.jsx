@@ -101,9 +101,9 @@ export default function CreateAuditWizard({
       ai: true,
       cro: false // Disabled for Sprint 2 (Scheduled for Sprint 3 & 4)
     },
-    targetDomain: client?.domain || 'cedarandcodental.com',
-    socialAccount: client?.socials?.instagram || client?.socialUrl || (client?.domain ? `https://instagram.com/${client.domain.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '')}` : 'https://instagram.com/cedarandcodental'),
-    brandName: client?.name || 'Cedar & Co. Dental',
+    targetDomain: (client?.domain && client?.id !== 'cedar-dental') ? client.domain : (client?.id === 'cedar-dental' ? 'cedarandcodental.com' : ''),
+    socialAccount: client?.socials?.instagram || client?.socialUrl || (client?.id === 'cedar-dental' ? 'https://instagram.com/cedarandcodental' : ''),
+    brandName: (client?.name && client?.id !== 'cedar-dental') ? client.name.replace(' (Live Scan)', '').replace(' Workspace', '') : (client?.id === 'cedar-dental' ? 'Cedar & Co. Dental' : ''),
     languages: {
       en: true,
       ar: true
@@ -248,11 +248,18 @@ export default function CreateAuditWizard({
 
   const handleLaunch = () => {
     if (isInsufficient || selectedPillarsCount === 0) return;
+    const finalDomain = (config.targetDomain || '').trim();
+    const finalBrand = (config.brandName || '').trim() || (finalDomain ? finalDomain.split('.')[0].toUpperCase() : 'My Business');
+    const finalConfig = {
+      ...config,
+      targetDomain: finalDomain || 'mybusiness.com',
+      brandName: finalBrand
+    };
     if (onDeductCredits) {
       onDeductCredits(requiredCredits);
     }
     if (onLaunchAudit) {
-      onLaunchAudit(config, requiredCredits);
+      onLaunchAudit(finalConfig, requiredCredits);
     }
   };
 

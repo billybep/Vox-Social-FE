@@ -37,9 +37,11 @@ export default function DashboardSection({
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [activeNav, setActiveNav] = useState('dashboard');
-    const [clientsList, setClientsList] = useState(() => getActiveClientsList());
+    const [currentUser, setCurrentUser] = useState(() => auth.currentUser);
+    const user = currentUser || auth.currentUser;
+    const [clientsList, setClientsList] = useState(() => getActiveClientsList(auth.currentUser));
     const [activeClient, setActiveClient] = useState(() => {
-        const list = getActiveClientsList();
+        const list = getActiveClientsList(auth.currentUser);
         return list.find(c => c.isReal) || list[0] || SAMPLE_CLIENTS[0];
     });
     const [showRoleMenu, setShowRoleMenu] = useState(false);
@@ -58,28 +60,35 @@ export default function DashboardSection({
     const t = translations[currentLang] || translations.en;
     const isRtl = currentLang === 'ar';
 
-    const [currentUser, setCurrentUser] = useState(() => auth.currentUser);
-
     // Keep auth user state in sync when session restores
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
-            if (u) setCurrentUser(u);
+            if (u) {
+                setCurrentUser(u);
+                const list = getActiveClientsList(u);
+                setClientsList(list);
+                setActiveClient(prev => {
+                    if (!prev || prev.id === 'cedar-dental' || !prev.isReal) {
+                        return list.find(c => c.isReal) || list[0] || prev;
+                    }
+                    return prev;
+                });
+            }
         });
         return () => unsubscribe();
     }, []);
 
-    const user = currentUser || auth.currentUser;
     const displayName = user?.displayName || (user?.email ? user.email.split('@')[0] : 'Consultant');
 
     // Sync client list when scans occur or component mounts
     useEffect(() => {
-        const list = getActiveClientsList();
+        const list = getActiveClientsList(user);
         setClientsList(list);
         const realOne = list.find(c => c.isReal);
         if (realOne) {
             setActiveClient(realOne);
         }
-    }, [seoAuditData, analysisResults]);
+    }, [seoAuditData, analysisResults, user]);
 
     // Compute diagnostics (handles real vs dummy gracefully)
     const diag = getClientDiagnostics(activeClient, seoAuditData, analysisResults);
@@ -844,11 +853,22 @@ export default function DashboardSection({
                         {/* SPRINT 2 VIEW: BUSINESS PROFILE */}
                         {activeNav === 'business_profile' && (
                             <BusinessProfileSection
+                                user={user}
                                 client={activeClient}
                                 t={t}
                                 isRtl={isRtl}
                                 onSaveClient={(updatedProfile) => {
-                                    setActiveClient(prev => ({ ...prev, ...updatedProfile, name: updatedProfile.brandName || prev.name }));
+                                    localStorage.setItem('vox_business_profile', JSON.stringify(updatedProfile));
+                                    setActiveClient(prev => ({
+                                        ...prev,
+                                        ...updatedProfile,
+                                        id: prev?.id || 'saved-workspace-client',
+                                        name: updatedProfile.brandName || prev?.name,
+                                        domain: updatedProfile.domain || prev?.domain,
+                                        isReal: true,
+                                        isDraft: false
+                                    }));
+                                    setClientsList(getActiveClientsList(user));
                                 }}
                             />
                         )}
@@ -875,7 +895,7 @@ export default function DashboardSection({
                                         return updated;
                                     });
 
-                                    const cleanDomain = (auditConfig.targetDomain || 'cedarandcodental.com')
+                                    const cleanDomain = (auditConfig.targetDomain || '')
                                         .replace(/^(https?:\/\/)?(www\.)?/, '')
                                         .replace(/\/$/, '')
                                         .toLowerCase();
@@ -893,10 +913,39 @@ export default function DashboardSection({
                                         socialScore: auditConfig.pillars?.social ? 82 : 70,
                                         isReal: true
                                     }));
-                                    const updatedList = getActiveClientsList();
+
+                                    // Auto-sync domain & brand to business profile
+                                    if (cleanDomain || auditConfig.brandName) {
+                                        let existing = {};
+                                        try {
+                                            existing = JSON.parse(localStorage.getItem('vox_business_profile')) || {};
+                                        } catch(e) {}
+                                        const synced = {
+                                            ...existing,
+                                            brandName: auditConfig.brandName || existing.brandName || (cleanDomain ? cleanDomain.split('.')[0].toUpperCase() : 'My Business'),
+                                            domain: cleanDomain || existing.domain || '',
+                                            socials: {
+                                                ...(existing.socials || {}),
+                                                instagram: auditConfig.socialAccount || existing.socials?.instagram || ''
+                                            },
+                                            isDraft: false
+                                        };
+                                        localStorage.setItem('vox_business_profile', JSON.stringify(synced));
+                                    }
+
+                                    const updatedList = getActiveClientsList(user);
                                     setClientsList(updatedList);
                                     if (updatedList[0]) setActiveClient(updatedList[0]);
-                                    setLaunchedConfig(auditConfig);
+
+                                    const newRunId = `run-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${(cleanDomain || 'vox').replace(/[^a-zA-Z0-9]/g, '').slice(0, 8)}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+                                    setLaunchedConfig({
+                                        ...auditConfig,
+                                        targetDomain: cleanDomain,
+                                        brandName: auditConfig.brandName || cleanDomain,
+                                        runId: newRunId,
+                                        isFreshLaunch: true
+                                    });
                                     setActiveNav('audit_progress');
 
                                     // 1. Run VoxSEO Engine in background if selected
@@ -990,16 +1039,24 @@ export default function DashboardSection({
                         {activeNav === 'audit_progress' && (
                             <AuditProgressCenter
                                 isDev={isDev}
-                                auditConfig={launchedConfig || { client: activeClient }}
+                                auditConfig={launchedConfig || {
+                                    targetDomain: activeClient?.domain,
+                                    brandName: activeClient?.name,
+                                    socialAccount: activeClient?.socials?.instagram || '',
+                                    client: activeClient,
+                                    isCompleted: Boolean(localStorage.getItem('vox_has_run_audit') === 'true' || localStorage.getItem('vox_last_unified_audit'))
+                                }}
+                                diag={diag}
                                 t={t}
                                 isRtl={isRtl}
                                 onOpenOverview={() => {
                                     localStorage.setItem('vox_has_run_audit', 'true');
-                                    const updatedList = getActiveClientsList();
+                                    const updatedList = getActiveClientsList(user);
                                     setClientsList(updatedList);
                                     if (updatedList[0]) setActiveClient(updatedList[0]);
                                     setActiveNav('intelligence_overview');
                                 }}
+                                onStartNewAudit={() => setActiveNav('create_audit')}
                             />
                         )}
 
