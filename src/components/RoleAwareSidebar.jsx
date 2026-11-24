@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 /**
  * Role-Aware Sidebar Component
@@ -26,8 +26,32 @@ export default function RoleAwareSidebar({
   setIsMobileOpen = () => {},
   t,
   isRtl,
-  onNewAudit
+  onNewAudit,
+  user,
+  activeClient
 }) {
+  const [avatarError, setAvatarError] = useState(false);
+
+  // Compute logged-in user profile info
+  const userDisplayName = user?.displayName || (user?.email ? user.email.split('@')[0] : (activeClient?.name || 'Workspace Account'));
+  const userSubtitle = user?.email || (t.roles ? (t.roles[currentRole] || currentRole) : currentRole);
+
+  // Compute initials for avatar (handles spaces or CamelCase like PixelByteCode -> PB)
+  const initials = (() => {
+    if (user?.displayName) {
+      const parts = user.displayName.trim().split(/\s+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      const capitals = user.displayName.match(/[A-Z]/g);
+      if (capitals && capitals.length >= 2) {
+        return (capitals[0] + capitals[1]).toUpperCase();
+      }
+      return user.displayName.slice(0, 2).toUpperCase();
+    }
+    if (user?.email) {
+      return user.email.slice(0, 2).toUpperCase();
+    }
+    return currentRole === 'business_owner' ? 'BO' : currentRole === 'consultant' ? 'SC' : 'AO';
+  })();
 
   // Define navigation groups and items with role permissions
   const NAV_SCHEMA = [
@@ -348,21 +372,41 @@ export default function RoleAwareSidebar({
         <div className="p-3 border-t border-[#1E2235] bg-[#0A0B10]">
           {(!isCollapsed || isMobileOpen) ? (
             <div className="p-2.5 rounded-xl bg-[#121422] border border-[#1E2235] flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#0094ea]/20 border border-[#0094ea]/40 flex items-center justify-center text-[#0094ea] font-black text-xs shrink-0">
-                {currentRole === 'business_owner' ? 'BO' : currentRole === 'consultant' ? 'SC' : 'AO'}
-              </div>
+              {user?.photoURL && !avatarError ? (
+                <img
+                  src={user.photoURL}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
+                  className="w-8 h-8 rounded-lg object-cover border border-[#1E2235] shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0094ea]/30 to-[#00e5ff]/20 border border-[#0094ea]/50 flex items-center justify-center text-[#00e5ff] font-black text-xs shrink-0 select-none shadow-xs">
+                  {initials}
+                </div>
+              )}
               <div className="truncate flex-1">
-                <span className="block text-xs font-bold text-white truncate">
-                  Cedar & Co.
+                <span className="block text-xs font-bold text-white truncate" title={userDisplayName}>
+                  {userDisplayName}
                 </span>
-                <span className="block text-[10px] font-mono text-cyan-400 capitalize">
-                  {t.roles[currentRole] || currentRole}
+                <span className="block text-[10px] font-mono text-cyan-400 capitalize truncate" title={userSubtitle}>
+                  {userSubtitle}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="w-8 h-8 mx-auto rounded-lg bg-[#0094ea]/20 border border-[#0094ea]/40 flex items-center justify-center text-[#0094ea] font-bold text-xs" title={currentRole}>
-              {currentRole === 'business_owner' ? 'B' : 'A'}
+            <div className="w-8 h-8 mx-auto rounded-lg bg-gradient-to-br from-[#0094ea]/30 to-[#00e5ff]/20 border border-[#0094ea]/50 flex items-center justify-center text-[#00e5ff] font-bold text-xs select-none" title={`${userDisplayName} (${currentRole})`}>
+              {user?.photoURL && !avatarError ? (
+                <img
+                  src={user.photoURL}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
+                  className="w-8 h-8 rounded-lg object-cover border border-[#1E2235]"
+                />
+              ) : (
+                initials
+              )}
             </div>
           )}
         </div>

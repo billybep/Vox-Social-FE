@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { signOut } from 'firebase/auth';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../utils/firebase';
 import { playSynthTick } from '../utils/audio';
 import LogoutModal from './LogoutModal';
@@ -54,7 +54,17 @@ export default function DashboardSection({
     const t = translations[currentLang] || translations.en;
     const isRtl = currentLang === 'ar';
 
-    const user = auth.currentUser;
+    const [currentUser, setCurrentUser] = useState(() => auth.currentUser);
+
+    // Keep auth user state in sync when session restores
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+            if (u) setCurrentUser(u);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const user = currentUser || auth.currentUser;
     const displayName = user?.displayName || (user?.email ? user.email.split('@')[0] : 'Consultant');
 
     // Sync client list when scans occur or component mounts
@@ -129,6 +139,8 @@ export default function DashboardSection({
                     t={t}
                     isRtl={isRtl}
                     onNewAudit={() => setActiveNav('create_audit')}
+                    user={user}
+                    activeClient={activeClient}
                 />
 
                 {/* 3. MAIN CONTENT CONTAINER (DARK TOPBAR + LIGHT CANVAS) */}
