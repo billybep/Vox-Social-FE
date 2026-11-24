@@ -39,6 +39,8 @@ export default function DashboardSection({
     const [activeNav, setActiveNav] = useState('dashboard');
     const [currentUser, setCurrentUser] = useState(() => auth.currentUser);
     const user = currentUser || auth.currentUser;
+    const [auditHistory, setAuditHistory] = useState([]);
+    const [isLoadingAudits, setIsLoadingAudits] = useState(false);
     const [clientsList, setClientsList] = useState(() => getActiveClientsList(auth.currentUser));
     const [activeClient, setActiveClient] = useState(() => {
         const list = getActiveClientsList(auth.currentUser);
@@ -60,35 +62,225 @@ export default function DashboardSection({
     const t = translations[currentLang] || translations.en;
     const isRtl = currentLang === 'ar';
 
-    // Keep auth user state in sync when session restores
+    // Helper for authenticated backend headers
+    const getAuthHeaders = (currentUserObj) => {
+        const u = currentUserObj || user || auth.currentUser;
+        const userId = u?.uid || u?.email || 'anonymous';
+        const userEmail = u?.email || '';
+        return {
+            'Content-Type': 'application/json',
+            'X-User-Id': userId,
+            'X-User-Email': userEmail
+        };
+    };
+
+    // Hydrate state from a backend audit record
+    const applyAuditToState = (audit) => {
+        if (!audit) return;
+        const full = audit.full_data || {};
+        const domain = audit.target_domain || full.targetDomain || '';
+        const brand = audit.brand_name || full.brandName || (domain ? domain.split('.')[0].toUpperCase() : 'Audited Entity');
+        const overallScore = audit.overall_score || full.overallScore || 78;
+        const seoScore = audit.seo_score || full.seoScore || (full.pillarsScores?.seo) || 82;
+        const socialScore = audit.social_score || full.socialScore || (full.pillarsScores?.social) || 74;
+
+        const unifiedPayload = {
+            id: audit.id,
+            domain: domain,
+            brandName: brand,
+            pillars: full.pillarsScores || { seo: true, social: true },
+            socialAccount: full.socialAccount || '',
+            date: audit.created_at ? new Date(audit.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            overall_score: overallScore,
+            seoScore: seoScore,
+            socialScore: socialScore,
+            evidence_coverage: audit.evidence_coverage || 92,
+            isReal: true,
+            fullData: full
+        };
+        localStorage.setItem('vox_has_run_audit', 'true');
+        localStorage.setItem('vox_last_unified_audit', JSON.stringify(unifiedPayload));
+
+        // Hydrate SEO state
+        const seoData = {
+            domain: domain,
+            overall_score: seoScore,
+            overall_grade: full.overallGrade || (seoScore >= 80 ? 'A' : 'B'),
+            date: audit.created_at ? new Date(audit.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+            fullData: full
+        };
+        localStorage.setItem('vox_last_seo', JSON.stringify(seoData));
+        if (setSeoAuditData) setSeoAuditData(seoData);
+
+        // Hydrate Social state
+        const socialData = {
+            score: socialScore,
+            label: full.executiveSummary || 'Analyzed Social Presence',
+            profileIdentity: brand,
+            categories: {
+                businessReadiness: socialScore,
+                profileClarity: socialScore,
+                contentQuality: socialScore,
+                trustScore: socialScore
+            },
+            strengths: (full.keyFindings || []).filter(f => f.pillar === 'Social').map(f => f.title),
+            opportunities: (full.roadmapItems || []).filter(f => f.pillar === 'Social').map(f => f.title),
+            fullData: full
+        };
+        localStorage.setItem('vox_last_social', JSON.stringify(socialData));
+        if (setAnalysisResults) setAnalysisResults(socialData);
+
+        // Update active client representation
+        const loadedClient = {
+            id: `audit-${audit.id}`,
+            auditId: audit.id,
+            name: brand,
+            domain: domain,
+            industry: "Audited Entity",
+            locations: [{ name: "Headquarters", country: "Global", city: "Online", isPrimary: true }],
+            lastAudit: audit.created_at ? new Date(audit.created_at).toLocaleDateString() : 'Recent',
+            isReal: true,
+            isDraft: false,
+            isAuditHistory: true,
+            overallScore: overallScore,
+            seoScore: seoScore,
+            socialScore: socialScore,
+            evidenceCoverage: audit.evidence_coverage || 92,
+            rawBackendItem: audit
+        };
+        setActiveClient(loadedClient);
+    };
+
+    // Load audit details by ID from GET /api/v1/audits/:id
+    const loadAuditById = async (auditId) => {
+        try {
+            const u = user || auth.currentUser;
+            const userId = u?.uid || u?.email || 'anonymous';
+            const headers = getAuthHeaders(u);
+            const res = await fetch(`${API_BASE}/audits/${auditId}?user_id=${encodeURIComponent(userId)}`, { headers });
+            if (!res.ok) return;
+            const json = await res.json();
+            if (json.success && json.data) {
+                applyAuditToState(json.data);
+            }
+        } catch (err) {
+            console.error('Failed to load audit by ID:', err);
+        }
+    };
+
+    // Load user audit history from GET /api/v1/audits/history & latest from GET /api/v1/audits/latest
+    const loadUserAuditsFromBackend = async (currentUserObj) => {
+        const u = currentUserObj || user || auth.currentUser;
+        if (!u) return;
+        const userId = u.uid || u.email || 'anonymous';
+        setIsLoadingAudits(true);
+        try {
+            const headers = getAuthHeaders(u);
+            const [historyRes, latestRes] = await Promise.allSettled([
+                fetch(`${API_BASE}/audits/history?user_id=${encodeURIComponent(userId)}`, { headers }),
+                fetch(`${API_BASE}/audits/latest?user_id=${encodeURIComponent(userId)}`, { headers })
+            ]);
+
+            let fetchedHistory = [];
+            if (historyRes.status === 'fulfilled' && historyRes.value.ok) {
+                const histJson = await historyRes.value.json();
+                fetchedHistory = histJson.data || (Array.isArray(histJson) ? histJson : []);
+                setAuditHistory(fetchedHistory);
+            }
+
+            const updatedList = getActiveClientsList(u, fetchedHistory);
+            setClientsList(updatedList);
+
+            // Strict user ownership check:
+            if (fetchedHistory.length > 0) {
+                // User has real audits in backend database:
+                let userLatest = null;
+                if (latestRes.status === 'fulfilled' && latestRes.value.ok) {
+                    const latestJson = await latestRes.value.json();
+                    const latest = latestJson.data;
+                    // ONLY accept latest if it belongs to this user or matches an audit in user's history
+                    if (latest && latest.id && (
+                        fetchedHistory.some(h => h.id === latest.id) ||
+                        latest.user_id === userId ||
+                        latest.user_id === u?.email ||
+                        latest.user_id === u?.uid
+                    )) {
+                        userLatest = latest;
+                    }
+                }
+                if (userLatest) {
+                    applyAuditToState(userLatest);
+                } else if (fetchedHistory[0]?.id) {
+                    await loadAuditById(fetchedHistory[0].id);
+                }
+            } else {
+                // User has ZERO audits in backend history (Clean New User Account):
+                // Clean any leftover / stale audit keys from past tests
+                localStorage.removeItem('vox_last_unified_audit');
+                localStorage.removeItem('vox_last_seo');
+                localStorage.removeItem('vox_last_social');
+                localStorage.removeItem('vox_has_run_audit');
+                try {
+                    const bp = JSON.parse(localStorage.getItem('vox_business_profile') || '{}');
+                    if (bp.domain === 'example.com' || bp.brandName === 'Example Corp') {
+                        localStorage.removeItem('vox_business_profile');
+                    }
+                } catch (e) {}
+
+                if (setSeoAuditData) setSeoAuditData(null);
+                if (setAnalysisResults) setAnalysisResults(null);
+
+                // Set active client to the clean user draft workspace
+                const cleanDraft = updatedList.find(c => c.isDraft) || updatedList[0];
+                if (cleanDraft) {
+                    setActiveClient(cleanDraft);
+                }
+            }
+        } catch (err) {
+            console.warn('Backend audit sync skipped:', err);
+        } finally {
+            setIsLoadingAudits(false);
+        }
+    };
+
+    // Keep auth user state in sync when session restores & fetch backend audits
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
             if (u) {
                 setCurrentUser(u);
-                const list = getActiveClientsList(u);
-                setClientsList(list);
-                setActiveClient(prev => {
-                    if (!prev || prev.id === 'cedar-dental' || !prev.isReal) {
-                        return list.find(c => c.isReal) || list[0] || prev;
-                    }
-                    return prev;
-                });
+                loadUserAuditsFromBackend(u);
             }
         });
         return () => unsubscribe();
     }, []);
 
+    // Also sync on initial mount or when user credentials shift
+    useEffect(() => {
+        if (currentUser?.uid || currentUser?.email) {
+            loadUserAuditsFromBackend(currentUser);
+        }
+    }, [currentUser?.uid, currentUser?.email]);
+
     const displayName = user?.displayName || (user?.email ? user.email.split('@')[0] : 'Consultant');
 
     // Sync client list when scans occur or component mounts
     useEffect(() => {
-        const list = getActiveClientsList(user);
+        const list = getActiveClientsList(user, auditHistory);
         setClientsList(list);
         const realOne = list.find(c => c.isReal);
         if (realOne) {
             setActiveClient(realOne);
         }
     }, [seoAuditData, analysisResults, user]);
+
+    const handleSelectClient = async (c) => {
+        playSynthTick(600, 'sine', 0.04, 0.05);
+        setActiveClient(c);
+        setShowClientMenu(false);
+        if (c.auditId) {
+            await loadAuditById(c.auditId);
+        }
+    };
 
     // Compute diagnostics (handles real vs dummy gracefully)
     const diag = getClientDiagnostics(activeClient, seoAuditData, analysisResults);
@@ -99,6 +291,11 @@ export default function DashboardSection({
         try {
             await signOut(auth);
             localStorage.removeItem('auth_token');
+            localStorage.removeItem('vox_last_unified_audit');
+            localStorage.removeItem('vox_last_seo');
+            localStorage.removeItem('vox_last_social');
+            localStorage.removeItem('vox_has_run_audit');
+            localStorage.removeItem('vox_business_profile');
             setView('login');
         } catch (e) {
             console.error('Logout error:', e);
@@ -133,8 +330,9 @@ export default function DashboardSection({
             {/* 1. TOP PERSISTENT SAMPLE DATA BANNER */}
             <SampleDataBanner
                 isReal={diag.isRealScore}
+                isDemo={diag.isDemoClient}
                 targetDomain={diag.domain}
-                onRunAudit={() => setView('seo_audit')}
+                onRunAudit={() => setActiveNav('create_audit')}
                 t={t}
             />
 
@@ -206,10 +404,7 @@ export default function DashboardSection({
                                             <button
                                                 key={c.id}
                                                 type="button"
-                                                onClick={() => {
-                                                    setActiveClient(c);
-                                                    setShowClientMenu(false);
-                                                }}
+                                                onClick={() => handleSelectClient(c)}
                                                 className={`w-full p-2.5 rounded-xl text-xs text-start transition-colors ${
                                                     activeClient?.id === c.id
                                                         ? 'bg-[#0094ea]/15 text-white font-bold border border-[#0094ea]/30'
@@ -218,7 +413,11 @@ export default function DashboardSection({
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <span className="font-bold truncate">{c.name}</span>
-                                                    {c.isReal ? (
+                                                    {c.auditId ? (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                                                            {c.overallScore ? `${c.overallScore}/100` : 'SAVED'}
+                                                        </span>
+                                                    ) : c.isReal ? (
                                                         <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                                                             LIVE SCAN
                                                         </span>
@@ -228,7 +427,7 @@ export default function DashboardSection({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="text-[10px] font-mono text-slate-400 block mt-0.5 truncate">{c.domain}</span>
+                                                <span className="text-[10px] font-mono text-slate-400 block mt-0.5 truncate">{c.domain || 'Workspace Draft'}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -368,6 +567,8 @@ export default function DashboardSection({
                                 diag={diag}
                                 t={t}
                                 isRtl={isRtl}
+                                auditHistory={auditHistory}
+                                onSelectAudit={loadAuditById}
                                 onStartAudit={() => setActiveNav('create_audit')}
                                 onOpenSeo={() => setActiveNav('intelligence_seo')}
                                 onOpenSocial={() => setActiveNav('intelligence_social')}
@@ -378,108 +579,172 @@ export default function DashboardSection({
                         )}
 
                         {/* VIEW 2: INTELLIGENCE OVERVIEW */}
-                        {activeNav === 'intelligence_overview' && (
-                            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-4">
-                                    <div>
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-xs font-mono font-bold uppercase text-slate-500">INTELLIGENCE PLATFORM</span>
-                                            {!diag.isRealScore && (
-                                                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                                    SAMPLE DATA
+                        {activeNav === 'intelligence_overview' && (() => {
+                            if (!diag.isRealScore && !diag.hasRealSeo && !diag.hasRealSocial && !diag.isDemoClient) {
+                                return (
+                                    <div className="max-w-4xl mx-auto px-4 sm:px-8 py-12 text-center font-sans space-y-6">
+                                        <div className="p-8 sm:p-12 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-6 animate-fade-in">
+                                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0094ea]/15 to-[#00e5ff]/20 text-[#0094ea] flex items-center justify-center text-2xl mx-auto shadow-xs border border-[#0094ea]/30">
+                                                <i className="fa-solid fa-compass"></i>
+                                            </div>
+                                            <div className="max-w-md mx-auto space-y-2">
+                                                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight font-display">
+                                                    No Growth Intelligence Data Yet
+                                                </h2>
+                                                <p className="text-xs text-slate-500 leading-relaxed">
+                                                    Cross-pillar intelligence activates when you launch an audit. Run your first growth audit to inspect technical SEO, multimodal social authority, and LLM generative search grounding.
+                                                </p>
+                                            </div>
+                                            <div className="pt-2">
+                                                <button
+                                                    onClick={() => setActiveNav('create_audit')}
+                                                    className="px-6 py-3 rounded-xl gradient-brand-cta text-slate-950 font-bold text-xs shadow-md hover:brightness-105 transition-all inline-flex items-center gap-2"
+                                                >
+                                                    <i className="fa-solid fa-plus-circle"></i>
+                                                    <span>Launch Complete Growth Audit →</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            return (
+                                <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-4">
+                                        <div>
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-xs font-mono font-bold uppercase text-slate-500">INTELLIGENCE PLATFORM</span>
+                                                {!diag.isRealScore && (
+                                                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                                        SAMPLE DATA
+                                                    </span>
+                                                )}
+                                                <EvidenceTag type="measured" source="Multi-Pillar Matrix" />
+                                            </div>
+                                            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display mt-1">
+                                                Unified Digital Presence Overview
+                                            </h2>
+                                            <p className="text-xs sm:text-sm text-slate-500">
+                                                Cross-pillar diagnostics for {diag.client.name} {diag.domain ? `(${diag.domain})` : ''}.
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={() => setActiveNav('dashboard')}
+                                            className="self-start sm:self-auto px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-xs transition-all"
+                                        >
+                                            ← Back to Dashboard
+                                        </button>
+                                    </div>
+
+                                    <ScoreBadge
+                                        score={diag.overallScore}
+                                        band={diag.overallScore >= 85 ? "Strong" : diag.overallScore >= 70 ? "Solid" : "Needs Work"}
+                                        coverage={diag.evidenceCoverage}
+                                        isReal={diag.isRealScore}
+                                        size="lg"
+                                    />
+
+                                    {/* Technical SEO & Social Split View */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-xs">
+                                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="text-sm font-bold text-slate-900">VoxSEO Search Engine Visibility</h4>
+                                                    {!diag.hasRealSeo && (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-amber-50 text-amber-800 border border-amber-300">
+                                                            SAMPLE
+                                                        </span>
+                                                    )}
+                                                    <EvidenceTag type={diag.hasRealSeo ? "measured" : "estimated"} />
+                                                </div>
+                                                <span className="text-xs font-black text-emerald-700 font-mono bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
+                                                    {diag.seoScore}/100
                                                 </span>
-                                            )}
-                                            <EvidenceTag type="measured" source="Multi-Pillar Matrix" />
-                                        </div>
-                                        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-display mt-1">
-                                            Unified Digital Presence Overview
-                                        </h2>
-                                        <p className="text-xs sm:text-sm text-slate-500">
-                                            Cross-pillar diagnostics for {diag.client.name} ({diag.domain}).
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={() => setActiveNav('dashboard')}
-                                        className="self-start sm:self-auto px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-xs transition-all"
-                                    >
-                                        ← Back to Dashboard
-                                    </button>
-                                </div>
-
-                                <ScoreBadge
-                                    score={diag.overallScore}
-                                    band={diag.overallScore >= 85 ? "Strong" : diag.overallScore >= 70 ? "Solid" : "Needs Work"}
-                                    coverage={diag.evidenceCoverage}
-                                    isReal={diag.isRealScore}
-                                    size="lg"
-                                />
-
-                                {/* Technical SEO & Social Split View */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-xs">
-                                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="text-sm font-bold text-slate-900">VoxSEO Search Engine Visibility</h4>
-                                                {!diag.hasRealSeo && (
-                                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-amber-50 text-amber-800 border border-amber-300">
-                                                        SAMPLE
-                                                    </span>
-                                                )}
-                                                <EvidenceTag type={diag.hasRealSeo ? "measured" : "estimated"} />
                                             </div>
-                                            <span className="text-xs font-black text-emerald-700 font-mono bg-emerald-50 px-2 py-1 rounded border border-emerald-200">
-                                                {diag.seoScore}/100
-                                            </span>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                {diag.hasRealSeo
+                                                    ? `Live crawl validated for domain: ${diag.domain}. 51 checkpoints evaluated.`
+                                                    : diag.isDemoClient
+                                                    ? `Simulated baseline for Cedar & Co. Dental. Real crawl activates upon running VoxSEO.`
+                                                    : `No technical SEO crawl recorded yet for this workspace.`
+                                                }
+                                            </p>
+                                            <button
+                                                onClick={() => setView('seo_audit')}
+                                                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white transition-all text-center"
+                                            >
+                                                Open VoxSEO Inspector →
+                                            </button>
                                         </div>
-                                        <p className="text-xs text-slate-600 leading-relaxed">
-                                            {diag.hasRealSeo
-                                                ? `Live crawl validated for domain: ${diag.domain}. 51 checkpoints evaluated.`
-                                                : `Simulated baseline for Cedar & Co. Dental. Real crawl activates upon running VoxSEO.`
-                                            }
-                                        </p>
-                                        <button
-                                            onClick={() => setView('seo_audit')}
-                                            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white transition-all text-center"
-                                        >
-                                            Open VoxSEO Inspector →
-                                        </button>
-                                    </div>
 
-                                    <div className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-xs">
-                                        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="text-sm font-bold text-slate-900">VoxSocial Readiness</h4>
-                                                {!diag.hasRealSocial && (
-                                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-amber-50 text-amber-800 border border-amber-300">
-                                                        SAMPLE
-                                                    </span>
-                                                )}
-                                                <EvidenceTag type={diag.hasRealSocial ? "measured" : "estimated"} />
+                                        <div className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-xs">
+                                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="text-sm font-bold text-slate-900">VoxSocial Readiness</h4>
+                                                    {!diag.hasRealSocial && (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-amber-50 text-amber-800 border border-amber-300">
+                                                            SAMPLE
+                                                        </span>
+                                                    )}
+                                                    <EvidenceTag type={diag.hasRealSocial ? "measured" : "estimated"} />
+                                                </div>
+                                                <span className="text-xs font-black text-pink-700 font-mono bg-pink-50 px-2 py-1 rounded border border-pink-200">
+                                                    {diag.socialScore}/100
+                                                </span>
                                             </div>
-                                            <span className="text-xs font-black text-pink-700 font-mono bg-pink-50 px-2 py-1 rounded border border-pink-200">
-                                                {diag.socialScore}/100
-                                            </span>
+                                            <p className="text-xs text-slate-600 leading-relaxed">
+                                                {diag.hasRealSocial
+                                                    ? `Gemini AI multimodal evaluation completed for public profile.`
+                                                    : diag.isDemoClient
+                                                    ? `Simulated social conversion baseline for cosmetic dentistry practice.`
+                                                    : `No social channels evaluated yet for this workspace.`
+                                                }
+                                            </p>
+                                            <button
+                                                onClick={() => setView('landing')}
+                                                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white transition-all text-center"
+                                            >
+                                                Open VoxSocial Analyzer →
+                                            </button>
                                         </div>
-                                        <p className="text-xs text-slate-600 leading-relaxed">
-                                            {diag.hasRealSocial
-                                                ? `Gemini AI multimodal evaluation completed for public profile.`
-                                                : `Simulated social conversion baseline for cosmetic dentistry practice.`
-                                            }
-                                        </p>
-                                        <button
-                                            onClick={() => setView('landing')}
-                                            className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-xs font-bold text-white transition-all text-center"
-                                        >
-                                            Open VoxSocial Analyzer →
-                                        </button>
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            );
+                        })()}
 
                         {/* VIEW 3: VOXSEO TECHNICAL SCORECARD */}
                         {activeNav === 'intelligence_seo' && (() => {
+                            if (!diag.hasRealSeo && !diag.isDemoClient) {
+                                return (
+                                    <div className="max-w-4xl mx-auto px-4 sm:px-8 py-12 text-center font-sans space-y-6">
+                                        <div className="p-8 sm:p-12 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-6 animate-fade-in">
+                                            <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mx-auto shadow-xs border border-emerald-200">
+                                                <i className="fa-solid fa-magnifying-glass"></i>
+                                            </div>
+                                            <div className="max-w-md mx-auto space-y-2">
+                                                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight font-display">
+                                                    No Technical SEO Crawl Data
+                                                </h2>
+                                                <p className="text-xs text-slate-500 leading-relaxed">
+                                                    No website audit has been run for this workspace yet. Execute a 51-checkpoint technical crawl to evaluate Core Web Vitals, indexability, security, and schema markup.
+                                                </p>
+                                            </div>
+                                            <div className="pt-2">
+                                                <button
+                                                    onClick={() => setView('seo_audit')}
+                                                    className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all inline-flex items-center gap-2"
+                                                >
+                                                    <i className="fa-solid fa-play"></i>
+                                                    <span>Run 51-Point VoxSEO Crawl →</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
                             const seoData = diag.effectiveSeo?.fullData || {};
                             const breakdown = seoData.breakdown || {};
                             const psiMobile = seoData.psi_mobile || {};
@@ -683,6 +948,35 @@ export default function DashboardSection({
 
                         {/* VIEW 4: VOXSOCIAL */}
                         {activeNav === 'intelligence_social' && (() => {
+                            if (!diag.hasRealSocial && !diag.isDemoClient) {
+                                return (
+                                    <div className="max-w-4xl mx-auto px-4 sm:px-8 py-12 text-center font-sans space-y-6">
+                                        <div className="p-8 sm:p-12 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-6 animate-fade-in">
+                                            <div className="w-16 h-16 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-2xl mx-auto shadow-xs border border-pink-200">
+                                                <i className="fa-brands fa-instagram"></i>
+                                            </div>
+                                            <div className="max-w-md mx-auto space-y-2">
+                                                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight font-display">
+                                                    No Social Intelligence Analyzed
+                                                </h2>
+                                                <p className="text-xs text-slate-500 leading-relaxed">
+                                                    No social media profile has been inspected yet. Run Gemini multimodal AI analysis on an Instagram or Facebook page to evaluate branding, bio clarity, and customer trust.
+                                                </p>
+                                            </div>
+                                            <div className="pt-2">
+                                                <button
+                                                    onClick={() => setView('landing')}
+                                                    className="px-6 py-3 rounded-xl bg-gradient-to-r from-pink-600 to-fuchsia-600 hover:from-pink-500 hover:to-fuchsia-500 text-white font-bold text-xs shadow-md transition-all inline-flex items-center gap-2"
+                                                >
+                                                    <i className="fa-solid fa-play"></i>
+                                                    <span>Run VoxSocial Analysis →</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            }
+
                             const socialData = diag.effectiveSocial?.fullData || {};
                             const categories = socialData.categories || {};
                             const strengths = socialData.strengths || ["Consistent visual identity", "Clear business address and bio", "Active community engagement"];
@@ -952,10 +1246,12 @@ export default function DashboardSection({
                                     if (auditConfig.pillars?.seo) {
                                         fetch(`${API_BASE}/seo/audit`, {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
+                                            headers: getAuthHeaders(user),
                                             body: JSON.stringify({
                                                 domain: cleanDomain,
-                                                business_name: auditConfig.brandName || ''
+                                                business_name: auditConfig.brandName || '',
+                                                user_id: user?.uid || user?.email || 'anonymous',
+                                                userId: user?.uid || user?.email || 'anonymous'
                                             })
                                         })
                                         .then(res => res.ok ? res.json() : null)
@@ -986,8 +1282,12 @@ export default function DashboardSection({
 
                                         fetch(`${API_BASE}/analyze`, {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ profile_url: rawSocialUrl })
+                                            headers: getAuthHeaders(user),
+                                            body: JSON.stringify({
+                                                profile_url: rawSocialUrl,
+                                                user_id: user?.uid || user?.email || 'anonymous',
+                                                userId: user?.uid || user?.email || 'anonymous'
+                                            })
                                         })
                                         .then(res => res.ok ? res.json() : null)
                                         .then(socialResult => {
@@ -1022,13 +1322,35 @@ export default function DashboardSection({
                                         .catch(() => {});
                                     }
 
-                                    // 3. Forward unified payload to /audits/run if endpoint available
+                                    // 3. Forward unified payload to /audits/run with user authentication and auto-sync
                                     try {
                                         fetch(`${API_BASE}/audits/run`, {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify(auditConfig)
-                                        }).catch(() => {});
+                                            headers: getAuthHeaders(user),
+                                            body: JSON.stringify({
+                                                ...auditConfig,
+                                                targetDomain: cleanDomain,
+                                                brandName: auditConfig.brandName || cleanDomain,
+                                                socialAccount: auditConfig.socialAccount || '',
+                                                user_id: user?.uid || user?.email || 'anonymous',
+                                                userId: user?.uid || user?.email || 'anonymous',
+                                                user_email: user?.email || ''
+                                            })
+                                        })
+                                        .then(res => res.ok ? res.json() : null)
+                                        .then(runResult => {
+                                            if (runResult?.auditId) {
+                                                setLaunchedConfig(prev => ({
+                                                    ...prev,
+                                                    runId: runResult.auditId
+                                                }));
+                                            }
+                                            // Re-sync history from backend so this run shows up
+                                            setTimeout(() => {
+                                                loadUserAuditsFromBackend(user);
+                                            }, 2000);
+                                        })
+                                        .catch(() => {});
                                     } catch (e) {}
                                 }}
                                 onCancel={() => setActiveNav('dashboard')}

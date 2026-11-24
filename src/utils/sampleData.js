@@ -214,6 +214,13 @@ export function getStoredRealScans() {
     if (sSeo) realSeo = JSON.parse(sSeo);
     if (sSocial) realSocial = JSON.parse(sSocial);
     if (sUnified) realUnified = JSON.parse(sUnified);
+    // Ignore stale test artifacts
+    if (realUnified && (realUnified.domain === 'example.com' || realUnified.brandName === 'Example Corp')) {
+      realUnified = null;
+    }
+    if (realSeo && (realSeo.domain === 'example.com' || realSeo.brandName === 'Example Corp')) {
+      realSeo = null;
+    }
   } catch (e) {
     // ignore parse error
   }
@@ -221,7 +228,7 @@ export function getStoredRealScans() {
 }
 
 // Compute active clients list dynamically (auto-inserting verified real scan or user workspace if present)
-export function getActiveClientsList(user = null) {
+export function getActiveClientsList(user = null, auditHistory = []) {
   const { realSeo, realSocial, realUnified } = getStoredRealScans();
   const list = [...SAMPLE_CLIENTS];
 
@@ -229,10 +236,47 @@ export function getActiveClientsList(user = null) {
   let customProfile = null;
   try {
     const raw = localStorage.getItem('vox_business_profile');
-    if (raw) customProfile = JSON.parse(raw);
+    if (raw) {
+      customProfile = JSON.parse(raw);
+      if (customProfile.domain === 'example.com' || customProfile.brandName === 'Example Corp') {
+        customProfile = null;
+      }
+    }
   } catch (e) {}
 
-  if (realSeo || realSocial || realUnified) {
+  // 1. Prepend audits from backend auditHistory if provided
+  if (Array.isArray(auditHistory) && auditHistory.length > 0) {
+    const historyClients = auditHistory.map(audit => {
+      const full = audit.full_data || {};
+      const domain = audit.target_domain || full.targetDomain || '';
+      const brand = audit.brand_name || full.brandName || (domain ? domain.split('.')[0].toUpperCase() : `Audit #${audit.id.slice(-6)}`);
+      return {
+        id: `audit-${audit.id}`,
+        auditId: audit.id,
+        name: brand,
+        domain: domain,
+        industry: "Audited Entity",
+        locations: [{ name: "Headquarters", country: "Global", city: "Online", isPrimary: true }],
+        lastAudit: audit.created_at ? new Date(audit.created_at).toLocaleDateString() : 'Recent',
+        isReal: true,
+        isDraft: false,
+        isAuditHistory: true,
+        overallScore: audit.overall_score || full.overallScore || 0,
+        seoScore: audit.seo_score || full.seoScore || 0,
+        socialScore: audit.social_score || full.socialScore || 0,
+        evidenceCoverage: audit.evidence_coverage || 92,
+        rawBackendItem: audit
+      };
+    });
+
+    // Add unique history clients to the top of list
+    for (let i = historyClients.length - 1; i >= 0; i--) {
+      const hc = historyClients[i];
+      if (!list.some(existing => existing.domain && hc.domain && existing.domain === hc.domain)) {
+        list.unshift(hc);
+      }
+    }
+  } else if (realSeo || realSocial || realUnified) {
     let domain = realUnified?.domain || customProfile?.domain || 'verified-client.com';
     let brandName = realUnified?.brandName || customProfile?.brandName || 'Verified Business';
 
@@ -326,20 +370,39 @@ export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSoc
   const effectiveSocial = runtimeSocial || storedSocial;
   const effectiveUnified = storedUnified;
 
-  const hasRealSeo = !!effectiveSeo && (activeClient?.isReal || (!activeClient?.isReal && effectiveSeo));
-  const hasRealSocial = !!effectiveSocial && (activeClient?.isReal || (!activeClient?.isReal && effectiveSocial));
-  const hasRealUnified = !!effectiveUnified && (activeClient?.isReal || (!activeClient?.isReal && effectiveUnified));
-  const isRealScore = hasRealSeo || hasRealSocial || hasRealUnified || !!activeClient?.isReal;
+  const isDemoClient = activeClient?.id === 'cedar-dental' || activeClient?.id === 'nordic-apex' || activeClient?.id === 'sultan-perfumes';
+  const hasRealSeo = !!effectiveSeo;
+  const hasRealSocial = !!effectiveSocial;
+  const hasRealUnified = !!effectiveUnified;
+  const isRealScore = hasRealSeo || hasRealSocial || hasRealUnified || (!!activeClient?.isReal && !activeClient?.isDraft);
 
-  const seoScore = hasRealSeo ? (effectiveSeo?.overall_score ?? effectiveSeo?.summary?.score ?? 85) : (activeClient?.seoScore || (effectiveUnified?.seoScore ?? 78));
-  const socialScore = hasRealSocial ? (effectiveSocial?.score ?? effectiveSocial?.overallScore ?? 82) : (activeClient?.socialScore || (effectiveUnified?.socialScore ?? 82));
-  const overallScore = isRealScore ? Math.round((seoScore * 0.55) + (socialScore * 0.45)) : (activeClient?.overallScore || 71);
+  const seoScore = hasRealSeo ? (effectiveSeo?.overall_score ?? effectiveSeo?.summary?.score ?? 85) : (effectiveUnified?.seoScore ?? (isDemoClient ? (activeClient?.seoScore || 78) : (activeClient?.seoScore || 0)));
+  const socialScore = hasRealSocial ? (effectiveSocial?.score ?? effectiveSocial?.overallScore ?? 82) : (effectiveUnified?.socialScore ?? (isDemoClient ? (activeClient?.socialScore || 82) : (activeClient?.socialScore || 0)));
+  const overallScore = isRealScore ? (activeClient?.overallScore || Math.round((seoScore * 0.55) + (socialScore * 0.45))) : (isDemoClient ? (activeClient?.overallScore || 71) : 0);
 
   // Dynamic real findings when real scan data exists
-  let customFindings = SAMPLE_AUDIT_DATA.highPriorityFindings;
+  let customFindings = isDemoClient ? SAMPLE_AUDIT_DATA.highPriorityFindings : [];
   if (isRealScore) {
     customFindings = [];
-    if (hasRealSeo) {
+
+    // 1. Priority: If backend audit has detailed keyFindings, map them directly
+    const backendFindings = activeClient?.rawBackendItem?.full_data?.keyFindings || effectiveUnified?.fullData?.keyFindings;
+    if (Array.isArray(backendFindings) && backendFindings.length > 0) {
+      customFindings = backendFindings.map((f, idx) => ({
+        id: f.id || `backend-find-${idx}`,
+        title: f.title || 'Diagnostic Finding',
+        category: f.pillar === 'SEO' ? 'VoxSEO' : f.pillar === 'Social' ? 'VoxSocial' : f.pillar ? `Pillar: ${f.pillar}` : 'Growth Intelligence',
+        severity: f.severity === 'critical' ? 'critical' : f.severity === 'watch' ? 'watch' : 'needsWork',
+        impact: f.pillar ? `${f.pillar} Priority Metric` : 'Verified Finding',
+        evidenceType: f.source === 'Measured' ? 'measured' : f.source === 'Estimated' ? 'estimated' : 'ai',
+        source: f.source || 'Unified Engine',
+        date: activeClient?.lastAudit || new Date().toLocaleDateString(),
+        description: f.description || '',
+        recommendation: f.evidence || 'Implement architectural optimization.'
+      }));
+    }
+
+    if (customFindings.length === 0 && hasRealSeo) {
       customFindings.push({
         id: 'real-seo-1',
         title: `Technical SEO Crawl Complete for ${effectiveSeo?.domain || activeClient?.domain}`,
@@ -383,24 +446,31 @@ export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSoc
         recommendation: "Review individual diagnostic cards to address verified high-priority recommendations."
       });
     }
-    // Fill remaining findings from sample to maintain 4-card matrix
-    SAMPLE_AUDIT_DATA.highPriorityFindings.slice(customFindings.length).forEach((f, i) => {
-      customFindings.push({ ...f, id: `hybrid-f-${i}` });
-    });
+    // If demo client, fill remaining findings from sample
+    if (isDemoClient) {
+      SAMPLE_AUDIT_DATA.highPriorityFindings.slice(customFindings.length).forEach((f, i) => {
+        customFindings.push({ ...f, id: `hybrid-f-${i}` });
+      });
+    }
   }
 
+  // Determine domain without hardcoded cedar fallback
+  const resolvedDomain = activeClient?.domain || effectiveSeo?.domain || (isDemoClient ? (activeClient?.domain || 'cedarandcodental.com') : '');
+
   return {
-    client: activeClient || SAMPLE_CLIENTS[0],
+    client: activeClient || { name: 'My Workspace', domain: '', isReal: true, isDraft: true },
     isRealScore,
+    isDemoClient,
     hasRealSeo,
     hasRealSocial,
+    hasRealUnified,
     overallScore,
     seoScore,
     socialScore,
-    aiScore: activeClient?.aiScore || 64,
-    croScore: activeClient?.croScore || 58,
-    domain: activeClient?.domain || effectiveSeo?.domain || 'cedarandcodental.com',
-    evidenceCoverage: isRealScore ? 96 : (activeClient?.evidenceCoverage || 87),
+    aiScore: isRealScore ? 78 : (isDemoClient ? (activeClient?.aiScore || 64) : 0),
+    croScore: isRealScore ? 72 : (isDemoClient ? (activeClient?.croScore || 58) : 0),
+    domain: resolvedDomain,
+    evidenceCoverage: isRealScore ? 96 : (isDemoClient ? (activeClient?.evidenceCoverage || 87) : 0),
     effectiveSeo,
     effectiveSocial,
     customFindings

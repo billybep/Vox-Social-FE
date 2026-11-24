@@ -23,17 +23,19 @@ export default function BusinessProfileSection({
   const userEmail = user?.email || '';
 
   const buildDefaultProfile = (cli) => {
-    // 1. Try reading saved profile from localStorage
+    // 1. Try reading saved profile from localStorage (ignore stale test domains)
     try {
       const saved = localStorage.getItem('vox_business_profile');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.brandName) return parsed;
+        if (parsed.brandName && parsed.domain !== 'example.com' && parsed.brandName !== 'Example Corp') {
+          return parsed;
+        }
       }
     } catch (e) {}
 
-    // 2. If client is real (live scan or explicit saved entity)
-    if (cli?.isReal && !cli.isDraft) {
+    // 2. If client is real (live scan or explicit saved entity, not draft and not test dummy)
+    if (cli?.isReal && !cli.isDraft && cli?.domain && cli.domain !== 'example.com') {
       return {
         isDraft: false,
         brandName: cli.name?.replace(' (Live Scan)', '') || userDisplayName,
@@ -138,14 +140,14 @@ export default function BusinessProfileSection({
 
   // Sync profile when client prop changes from the top navbar switcher
   React.useEffect(() => {
-    if (client?.id && client.id !== 'user-primary-workspace' && client.id !== 'saved-workspace-client') {
+    if (client?.id) {
       if (client.id === 'cedar-dental') {
         loadSampleDemo();
-      } else if (client.id === 'nordic-apex' || client.id === 'sultan-perfumes') {
+      } else {
         setProfile(buildDefaultProfile(client));
       }
     }
-  }, [client?.id]);
+  }, [client?.id, client?.domain, client?.isDraft]);
 
   const loadSampleDemo = () => {
     setProfile({
