@@ -39,6 +39,8 @@ export default function DashboardSection({
     const [activeNav, setActiveNav] = useState('dashboard');
     const [currentUser, setCurrentUser] = useState(() => auth.currentUser);
     const user = currentUser || auth.currentUser;
+    const [auditHistory, setAuditHistory] = useState([]);
+    const [isLoadingAudits, setIsLoadingAudits] = useState(false);
     const [clientsList, setClientsList] = useState(() => getActiveClientsList(auth.currentUser));
     const [activeClient, setActiveClient] = useState(() => {
         const list = getActiveClientsList(auth.currentUser);
@@ -60,35 +62,225 @@ export default function DashboardSection({
     const t = translations[currentLang] || translations.en;
     const isRtl = currentLang === 'ar';
 
-    // Keep auth user state in sync when session restores
+    // Helper for authenticated backend headers
+    const getAuthHeaders = (currentUserObj) => {
+        const u = currentUserObj || user || auth.currentUser;
+        const userId = u?.uid || u?.email || 'anonymous';
+        const userEmail = u?.email || '';
+        return {
+            'Content-Type': 'application/json',
+            'X-User-Id': userId,
+            'X-User-Email': userEmail
+        };
+    };
+
+    // Hydrate state from a backend audit record
+    const applyAuditToState = (audit) => {
+        if (!audit) return;
+        const full = audit.full_data || {};
+        const domain = audit.target_domain || full.targetDomain || '';
+        const brand = audit.brand_name || full.brandName || (domain ? domain.split('.')[0].toUpperCase() : 'Audited Entity');
+        const overallScore = audit.overall_score || full.overallScore || 78;
+        const seoScore = audit.seo_score || full.seoScore || (full.pillarsScores?.seo) || 82;
+        const socialScore = audit.social_score || full.socialScore || (full.pillarsScores?.social) || 74;
+
+        const unifiedPayload = {
+            id: audit.id,
+            domain: domain,
+            brandName: brand,
+            pillars: full.pillarsScores || { seo: true, social: true },
+            socialAccount: full.socialAccount || '',
+            date: audit.created_at ? new Date(audit.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            overall_score: overallScore,
+            seoScore: seoScore,
+            socialScore: socialScore,
+            evidence_coverage: audit.evidence_coverage || 92,
+            isReal: true,
+            fullData: full
+        };
+        localStorage.setItem('vox_has_run_audit', 'true');
+        localStorage.setItem('vox_last_unified_audit', JSON.stringify(unifiedPayload));
+
+        // Hydrate SEO state
+        const seoData = {
+            domain: domain,
+            overall_score: seoScore,
+            overall_grade: full.overallGrade || (seoScore >= 80 ? 'A' : 'B'),
+            date: audit.created_at ? new Date(audit.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+            fullData: full
+        };
+        localStorage.setItem('vox_last_seo', JSON.stringify(seoData));
+        if (setSeoAuditData) setSeoAuditData(seoData);
+
+        // Hydrate Social state
+        const socialData = {
+            score: socialScore,
+            label: full.executiveSummary || 'Analyzed Social Presence',
+            profileIdentity: brand,
+            categories: {
+                businessReadiness: socialScore,
+                profileClarity: socialScore,
+                contentQuality: socialScore,
+                trustScore: socialScore
+            },
+            strengths: (full.keyFindings || []).filter(f => f.pillar === 'Social').map(f => f.title),
+            opportunities: (full.roadmapItems || []).filter(f => f.pillar === 'Social').map(f => f.title),
+            fullData: full
+        };
+        localStorage.setItem('vox_last_social', JSON.stringify(socialData));
+        if (setAnalysisResults) setAnalysisResults(socialData);
+
+        // Update active client representation
+        const loadedClient = {
+            id: `audit-${audit.id}`,
+            auditId: audit.id,
+            name: brand,
+            domain: domain,
+            industry: "Audited Entity",
+            locations: [{ name: "Headquarters", country: "Global", city: "Online", isPrimary: true }],
+            lastAudit: audit.created_at ? new Date(audit.created_at).toLocaleDateString() : 'Recent',
+            isReal: true,
+            isDraft: false,
+            isAuditHistory: true,
+            overallScore: overallScore,
+            seoScore: seoScore,
+            socialScore: socialScore,
+            evidenceCoverage: audit.evidence_coverage || 92,
+            rawBackendItem: audit
+        };
+        setActiveClient(loadedClient);
+    };
+
+    // Load audit details by ID from GET /api/v1/audits/:id
+    const loadAuditById = async (auditId) => {
+        try {
+            const u = user || auth.currentUser;
+            const userId = u?.uid || u?.email || 'anonymous';
+            const headers = getAuthHeaders(u);
+            const res = await fetch(`${API_BASE}/audits/${auditId}?user_id=${encodeURIComponent(userId)}`, { headers });
+            if (!res.ok) return;
+            const json = await res.json();
+            if (json.success && json.data) {
+                applyAuditToState(json.data);
+            }
+        } catch (err) {
+            console.error('Failed to load audit by ID:', err);
+        }
+    };
+
+    // Load user audit history from GET /api/v1/audits/history & latest from GET /api/v1/audits/latest
+    const loadUserAuditsFromBackend = async (currentUserObj) => {
+        const u = currentUserObj || user || auth.currentUser;
+        if (!u) return;
+        const userId = u.uid || u.email || 'anonymous';
+        setIsLoadingAudits(true);
+        try {
+            const headers = getAuthHeaders(u);
+            const [historyRes, latestRes] = await Promise.allSettled([
+                fetch(`${API_BASE}/audits/history?user_id=${encodeURIComponent(userId)}`, { headers }),
+                fetch(`${API_BASE}/audits/latest?user_id=${encodeURIComponent(userId)}`, { headers })
+            ]);
+
+            let fetchedHistory = [];
+            if (historyRes.status === 'fulfilled' && historyRes.value.ok) {
+                const histJson = await historyRes.value.json();
+                fetchedHistory = histJson.data || (Array.isArray(histJson) ? histJson : []);
+                setAuditHistory(fetchedHistory);
+            }
+
+            const updatedList = getActiveClientsList(u, fetchedHistory);
+            setClientsList(updatedList);
+
+            // Strict user ownership check:
+            if (fetchedHistory.length > 0) {
+                // User has real audits in backend database:
+                let userLatest = null;
+                if (latestRes.status === 'fulfilled' && latestRes.value.ok) {
+                    const latestJson = await latestRes.value.json();
+                    const latest = latestJson.data;
+                    // ONLY accept latest if it belongs to this user or matches an audit in user's history
+                    if (latest && latest.id && (
+                        fetchedHistory.some(h => h.id === latest.id) ||
+                        latest.user_id === userId ||
+                        latest.user_id === u?.email ||
+                        latest.user_id === u?.uid
+                    )) {
+                        userLatest = latest;
+                    }
+                }
+                if (userLatest) {
+                    applyAuditToState(userLatest);
+                } else if (fetchedHistory[0]?.id) {
+                    await loadAuditById(fetchedHistory[0].id);
+                }
+            } else {
+                // User has ZERO audits in backend history (Clean New User Account):
+                // Clean any leftover / stale audit keys from past tests
+                localStorage.removeItem('vox_last_unified_audit');
+                localStorage.removeItem('vox_last_seo');
+                localStorage.removeItem('vox_last_social');
+                localStorage.removeItem('vox_has_run_audit');
+                try {
+                    const bp = JSON.parse(localStorage.getItem('vox_business_profile') || '{}');
+                    if (bp.domain === 'example.com' || bp.brandName === 'Example Corp') {
+                        localStorage.removeItem('vox_business_profile');
+                    }
+                } catch (e) {}
+
+                if (setSeoAuditData) setSeoAuditData(null);
+                if (setAnalysisResults) setAnalysisResults(null);
+
+                // Set active client to the clean user draft workspace
+                const cleanDraft = updatedList.find(c => c.isDraft) || updatedList[0];
+                if (cleanDraft) {
+                    setActiveClient(cleanDraft);
+                }
+            }
+        } catch (err) {
+            console.warn('Backend audit sync skipped:', err);
+        } finally {
+            setIsLoadingAudits(false);
+        }
+    };
+
+    // Keep auth user state in sync when session restores & fetch backend audits
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (u) => {
             if (u) {
                 setCurrentUser(u);
-                const list = getActiveClientsList(u);
-                setClientsList(list);
-                setActiveClient(prev => {
-                    if (!prev || prev.id === 'cedar-dental' || !prev.isReal) {
-                        return list.find(c => c.isReal) || list[0] || prev;
-                    }
-                    return prev;
-                });
+                loadUserAuditsFromBackend(u);
             }
         });
         return () => unsubscribe();
     }, []);
 
+    // Also sync on initial mount or when user credentials shift
+    useEffect(() => {
+        if (currentUser?.uid || currentUser?.email) {
+            loadUserAuditsFromBackend(currentUser);
+        }
+    }, [currentUser?.uid, currentUser?.email]);
+
     const displayName = user?.displayName || (user?.email ? user.email.split('@')[0] : 'Consultant');
 
     // Sync client list when scans occur or component mounts
     useEffect(() => {
-        const list = getActiveClientsList(user);
+        const list = getActiveClientsList(user, auditHistory);
         setClientsList(list);
         const realOne = list.find(c => c.isReal);
         if (realOne) {
             setActiveClient(realOne);
         }
     }, [seoAuditData, analysisResults, user]);
+
+    const handleSelectClient = async (c) => {
+        playSynthTick(600, 'sine', 0.04, 0.05);
+        setActiveClient(c);
+        setShowClientMenu(false);
+        if (c.auditId) {
+            await loadAuditById(c.auditId);
+        }
+    };
 
     // Compute diagnostics (handles real vs dummy gracefully)
     const diag = getClientDiagnostics(activeClient, seoAuditData, analysisResults);
@@ -99,6 +291,11 @@ export default function DashboardSection({
         try {
             await signOut(auth);
             localStorage.removeItem('auth_token');
+            localStorage.removeItem('vox_last_unified_audit');
+            localStorage.removeItem('vox_last_seo');
+            localStorage.removeItem('vox_last_social');
+            localStorage.removeItem('vox_has_run_audit');
+            localStorage.removeItem('vox_business_profile');
             setView('login');
         } catch (e) {
             console.error('Logout error:', e);
@@ -207,10 +404,7 @@ export default function DashboardSection({
                                             <button
                                                 key={c.id}
                                                 type="button"
-                                                onClick={() => {
-                                                    setActiveClient(c);
-                                                    setShowClientMenu(false);
-                                                }}
+                                                onClick={() => handleSelectClient(c)}
                                                 className={`w-full p-2.5 rounded-xl text-xs text-start transition-colors ${
                                                     activeClient?.id === c.id
                                                         ? 'bg-[#0094ea]/15 text-white font-bold border border-[#0094ea]/30'
@@ -219,7 +413,11 @@ export default function DashboardSection({
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <span className="font-bold truncate">{c.name}</span>
-                                                    {c.isReal ? (
+                                                    {c.auditId ? (
+                                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                                                            {c.overallScore ? `${c.overallScore}/100` : 'SAVED'}
+                                                        </span>
+                                                    ) : c.isReal ? (
                                                         <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                                                             LIVE SCAN
                                                         </span>
@@ -229,7 +427,7 @@ export default function DashboardSection({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="text-[10px] font-mono text-slate-400 block mt-0.5 truncate">{c.domain}</span>
+                                                <span className="text-[10px] font-mono text-slate-400 block mt-0.5 truncate">{c.domain || 'Workspace Draft'}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -369,6 +567,8 @@ export default function DashboardSection({
                                 diag={diag}
                                 t={t}
                                 isRtl={isRtl}
+                                auditHistory={auditHistory}
+                                onSelectAudit={loadAuditById}
                                 onStartAudit={() => setActiveNav('create_audit')}
                                 onOpenSeo={() => setActiveNav('intelligence_seo')}
                                 onOpenSocial={() => setActiveNav('intelligence_social')}
@@ -1046,10 +1246,12 @@ export default function DashboardSection({
                                     if (auditConfig.pillars?.seo) {
                                         fetch(`${API_BASE}/seo/audit`, {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
+                                            headers: getAuthHeaders(user),
                                             body: JSON.stringify({
                                                 domain: cleanDomain,
-                                                business_name: auditConfig.brandName || ''
+                                                business_name: auditConfig.brandName || '',
+                                                user_id: user?.uid || user?.email || 'anonymous',
+                                                userId: user?.uid || user?.email || 'anonymous'
                                             })
                                         })
                                         .then(res => res.ok ? res.json() : null)
@@ -1080,8 +1282,12 @@ export default function DashboardSection({
 
                                         fetch(`${API_BASE}/analyze`, {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ profile_url: rawSocialUrl })
+                                            headers: getAuthHeaders(user),
+                                            body: JSON.stringify({
+                                                profile_url: rawSocialUrl,
+                                                user_id: user?.uid || user?.email || 'anonymous',
+                                                userId: user?.uid || user?.email || 'anonymous'
+                                            })
                                         })
                                         .then(res => res.ok ? res.json() : null)
                                         .then(socialResult => {
@@ -1116,13 +1322,35 @@ export default function DashboardSection({
                                         .catch(() => {});
                                     }
 
-                                    // 3. Forward unified payload to /audits/run if endpoint available
+                                    // 3. Forward unified payload to /audits/run with user authentication and auto-sync
                                     try {
                                         fetch(`${API_BASE}/audits/run`, {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify(auditConfig)
-                                        }).catch(() => {});
+                                            headers: getAuthHeaders(user),
+                                            body: JSON.stringify({
+                                                ...auditConfig,
+                                                targetDomain: cleanDomain,
+                                                brandName: auditConfig.brandName || cleanDomain,
+                                                socialAccount: auditConfig.socialAccount || '',
+                                                user_id: user?.uid || user?.email || 'anonymous',
+                                                userId: user?.uid || user?.email || 'anonymous',
+                                                user_email: user?.email || ''
+                                            })
+                                        })
+                                        .then(res => res.ok ? res.json() : null)
+                                        .then(runResult => {
+                                            if (runResult?.auditId) {
+                                                setLaunchedConfig(prev => ({
+                                                    ...prev,
+                                                    runId: runResult.auditId
+                                                }));
+                                            }
+                                            // Re-sync history from backend so this run shows up
+                                            setTimeout(() => {
+                                                loadUserAuditsFromBackend(user);
+                                            }, 2000);
+                                        })
+                                        .catch(() => {});
                                     } catch (e) {}
                                 }}
                                 onCancel={() => setActiveNav('dashboard')}

@@ -20,6 +20,8 @@ export default function WorkspaceDashboard({
   diag,
   t,
   isRtl,
+  auditHistory = [],
+  onSelectAudit,
   onStartAudit,
   onOpenSeo,
   onOpenSocial,
@@ -29,6 +31,7 @@ export default function WorkspaceDashboard({
 }) {
   // Detect if any audit or scan has been run
   const hasAuditedData = Boolean(
+    (auditHistory && auditHistory.length > 0) ||
     diag?.isRealScore ||
     diag?.hasRealSeo ||
     diag?.hasRealSocial ||
@@ -405,6 +408,101 @@ export default function WorkspaceDashboard({
                 ))}
               </div>
             </div>
+
+            {/* Audit History & Saved Runs (Live Database Records) */}
+            {auditHistory && auditHistory.length > 0 && (
+              <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-slate-900">Audit History & Database Snapshots</h3>
+                      <span className="px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase bg-cyan-50 text-cyan-800 border border-cyan-300">
+                        {auditHistory.length} RUNS LOGGED
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">Persistent growth audits stored in backend database. Click any audit to load its full findings.</p>
+                  </div>
+                  <button
+                    onClick={onStartAudit}
+                    className="self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+                  >
+                    <i className="fa-solid fa-plus-circle text-xs text-[#00e5ff]"></i>
+                    <span>New Audit Run</span>
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-start">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-slate-500 font-mono text-[10px] uppercase">
+                        <th className="py-2.5 px-3 text-start">Target Entity</th>
+                        <th className="py-2.5 px-3 text-start">Run ID</th>
+                        <th className="py-2.5 px-3 text-start">Date</th>
+                        <th className="py-2.5 px-3 text-start">Overall Score</th>
+                        <th className="py-2.5 px-3 text-start">Pillars</th>
+                        <th className="py-2.5 px-3 text-end">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {auditHistory.map(audit => {
+                        const isCurrent = diag?.client?.rawBackendItem?.id === audit.id || diag?.domain === audit.target_domain;
+                        const auditScore = audit.overall_score || 0;
+                        return (
+                          <tr key={audit.id} className={`hover:bg-slate-50/80 transition-colors ${isCurrent ? 'bg-blue-50/40 font-medium' : ''}`}>
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] shrink-0 font-bold">
+                                  <i className="fa-solid fa-globe text-brand-blue"></i>
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-900 truncate max-w-[160px] sm:max-w-[220px]">
+                                    {audit.brand_name || audit.target_domain || `Audit #${audit.id.slice(-6)}`}
+                                  </div>
+                                  <div className="text-[10px] font-mono text-slate-500 truncate max-w-[160px]">
+                                    {audit.target_domain}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 font-mono text-[10px] text-slate-500">
+                              {audit.id}
+                            </td>
+                            <td className="py-3 px-3 text-slate-600">
+                              {audit.created_at ? new Date(audit.created_at).toLocaleDateString() : 'Recent'}
+                            </td>
+                            <td className="py-3 px-3">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                                auditScore >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                                auditScore >= 65 ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                                'bg-amber-50 text-amber-700 border border-amber-200'
+                              }`}>
+                                {auditScore}/100
+                              </span>
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-1 font-mono text-[10px] text-slate-600">
+                                <span>SEO: {audit.seo_score ?? '—'}</span>
+                                <span className="text-slate-300">·</span>
+                                <span>Social: {audit.social_score ?? '—'}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-end">
+                              <button
+                                type="button"
+                                onClick={() => onSelectAudit && onSelectAudit(audit.id)}
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-brand-blue hover:text-white text-slate-700 font-bold text-[11px] transition-colors"
+                              >
+                                {isCurrent ? 'Active Snapshot' : 'Load Audit →'}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             {/* High-Priority Growth Findings (Human-Reviewed Opportunities) */}
             <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4">
