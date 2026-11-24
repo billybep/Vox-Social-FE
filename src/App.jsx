@@ -9,7 +9,13 @@ import { auth } from './utils/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { playSynthTick } from './utils/audio';
 
+// Environment Configuration:
+// 'prod' = Production mode (Clean UI, realistic auto-progressing audit stages, hides reviewer state switchers)
+// 'dev'  = Development & review mode (displays Sprint 1 & 2 reviewer state switcher bars)
+export const APP_ENV = 'prod';
+
 function App() {
+    const isDev = APP_ENV === 'dev';
     const [view, setView] = useState('login');
     const [profileUrl, setProfileUrl] = useState('');
     const [inputError, setInputError] = useState('');
@@ -256,9 +262,12 @@ function App() {
 
                 {view === 'dashboard' && (
                     <DashboardSection
+                        isDev={isDev}
                         setView={setView}
                         analysisResults={analysisResults}
+                        setAnalysisResults={setAnalysisResults}
                         seoAuditData={seoAuditData}
+                        setSeoAuditData={setSeoAuditData}
                         userRole={userRole}
                         setUserRole={setUserRole}
                         language={language}

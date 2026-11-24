@@ -31,6 +31,7 @@ export default function RoleAwareSidebar({
   activeClient
 }) {
   const [avatarError, setAvatarError] = useState(false);
+  const [avatarLoaded, setAvatarLoaded] = useState(false);
 
   // Compute logged-in user profile info
   const userDisplayName = user?.displayName || (user?.email ? user.email.split('@')[0] : (activeClient?.name || 'Workspace Account'));
@@ -372,19 +373,19 @@ export default function RoleAwareSidebar({
         <div className="p-3 border-t border-[#1E2235] bg-[#0A0B10]">
           {(!isCollapsed || isMobileOpen) ? (
             <div className="p-2.5 rounded-xl bg-[#121422] border border-[#1E2235] flex items-center gap-3">
-              {user?.photoURL && !avatarError ? (
-                <img
-                  src={user.photoURL}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  onError={() => setAvatarError(true)}
-                  className="w-8 h-8 rounded-lg object-cover border border-[#1E2235] shrink-0"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0094ea]/30 to-[#00e5ff]/20 border border-[#0094ea]/50 flex items-center justify-center text-[#00e5ff] font-black text-xs shrink-0 select-none shadow-xs">
-                  {initials}
-                </div>
-              )}
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0094ea]/30 to-[#00e5ff]/20 border border-[#0094ea]/50 flex items-center justify-center text-[#00e5ff] font-black text-xs shrink-0 select-none shadow-xs relative overflow-hidden">
+                <span>{initials}</span>
+                {user?.photoURL && !avatarError && (
+                  <img
+                    src={user.photoURL}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    onLoad={() => setAvatarLoaded(true)}
+                    onError={() => setAvatarError(true)}
+                    className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${avatarLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  />
+                )}
+              </div>
               <div className="truncate flex-1">
                 <span className="block text-xs font-bold text-white truncate" title={userDisplayName}>
                   {userDisplayName}
@@ -395,17 +396,17 @@ export default function RoleAwareSidebar({
               </div>
             </div>
           ) : (
-            <div className="w-8 h-8 mx-auto rounded-lg bg-gradient-to-br from-[#0094ea]/30 to-[#00e5ff]/20 border border-[#0094ea]/50 flex items-center justify-center text-[#00e5ff] font-bold text-xs select-none" title={`${userDisplayName} (${currentRole})`}>
-              {user?.photoURL && !avatarError ? (
+            <div className="w-8 h-8 mx-auto rounded-lg bg-gradient-to-br from-[#0094ea]/30 to-[#00e5ff]/20 border border-[#0094ea]/50 flex items-center justify-center text-[#00e5ff] font-bold text-xs select-none relative overflow-hidden" title={`${userDisplayName} (${currentRole})`}>
+              <span>{initials}</span>
+              {user?.photoURL && !avatarError && (
                 <img
                   src={user.photoURL}
                   alt=""
                   referrerPolicy="no-referrer"
+                  onLoad={() => setAvatarLoaded(true)}
                   onError={() => setAvatarError(true)}
-                  className="w-8 h-8 rounded-lg object-cover border border-[#1E2235]"
+                  className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-200 ${avatarLoaded ? 'opacity-100' : 'opacity-0'}`}
                 />
-              ) : (
-                initials
               )}
             </div>
           )}

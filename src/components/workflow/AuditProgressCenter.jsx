@@ -13,11 +13,16 @@ import EvidenceTag from '../core/EvidenceTag';
  * 3. Completed: All stages finished with primary CTA to open VoxAudit Intelligence Overview.
  */
 export default function AuditProgressCenter({
+  isDev = false,
   auditConfig,
   t,
   isRtl,
   onOpenOverview
 }) {
+  const domain = auditConfig?.targetDomain || 'cedarandcodental.com';
+  const brand = auditConfig?.brandName || 'Cedar & Co. Dental';
+  const socialAccount = auditConfig?.socialAccount || '@cedarandcodental';
+
   // Reviewer State Mode: 'running' | 'failed' | 'completed'
   const [simulationState, setSimulationState] = useState('running');
   const [activeStageIndex, setActiveStageIndex] = useState(2); // In running mode, stage 3 is active
@@ -32,7 +37,7 @@ export default function AuditProgressCenter({
       engine: 'Multi-Node Crawler (SEOptimer Core)',
       timestamp: '00:03',
       status: 'completed', // 'completed' | 'running' | 'failed' | 'pending'
-      details: '51 technical checkpoints evaluated: DNS, SSL, Core Web Vitals, mobile viewport, schema markup.',
+      details: `51 technical checkpoints evaluated for ${domain}: DNS, SSL, Core Web Vitals, mobile viewport, schema markup.`,
       error: null
     },
     {
@@ -41,7 +46,7 @@ export default function AuditProgressCenter({
       engine: 'Google Gemini 1.5 Pro',
       timestamp: '00:09',
       status: 'completed',
-      details: 'Bio clarity, visual consistency, and direct booking conversion parameters inspected.',
+      details: `Inspecting ${socialAccount}: bio clarity, visual consistency, and direct booking conversion parameters.`,
       error: null
     },
     {
@@ -50,7 +55,7 @@ export default function AuditProgressCenter({
       engine: 'LLM Search Probes (Perplexity & ChatGPT)',
       timestamp: '00:14',
       status: 'running',
-      details: 'Querying 12 localized cosmetic dentistry queries across ChatGPT Search & Perplexity Pro.',
+      details: `Querying 12 localized market queries for ${brand} across ChatGPT Search & Perplexity Pro.`,
       error: null
     },
     {
@@ -59,7 +64,7 @@ export default function AuditProgressCenter({
       engine: 'Competitive Multi-Domain Parser',
       timestamp: 'Pending',
       status: 'pending',
-      details: 'Calculating comparative market score for Apex Dental, Pearl White Care, and SmileCraft.',
+      details: `Calculating comparative market benchmark for ${brand} against regional competitors.`,
       error: null
     },
     {
@@ -77,30 +82,77 @@ export default function AuditProgressCenter({
   useEffect(() => {
     if (simulationState === 'running') {
       setStages([
-        { id: 'stage-1', name: 'Website Crawl & VoxSEO Engine', engine: 'Multi-Node Crawler', timestamp: '00:03', status: 'completed', details: '51 technical checkpoints evaluated: DNS, SSL, Core Web Vitals, schema markup.', error: null },
-        { id: 'stage-2', name: 'Social Authority & Gemini Multimodal AI', engine: 'Google Gemini 1.5 Pro', timestamp: '00:09', status: 'completed', details: 'Bio clarity, visual consistency, and direct booking parameters inspected.', error: null },
-        { id: 'stage-3', name: 'Generative AI Visibility Grounding', engine: 'LLM Search Probes', timestamp: '00:14', status: 'running', details: 'Querying 12 localized cosmetic dentistry queries across ChatGPT Search & Perplexity Pro.', error: null },
-        { id: 'stage-4', name: 'Regional Competitor Benchmarking', engine: 'Competitive Multi-Domain Parser', timestamp: 'Pending', status: 'pending', details: 'Calculating comparative market score for 3 competitors.', error: null },
+        { id: 'stage-1', name: 'Website Crawl & VoxSEO Engine', engine: 'Multi-Node Crawler', timestamp: '00:03', status: 'completed', details: `51 technical checkpoints evaluated for ${domain}: DNS, SSL, Core Web Vitals, schema markup.`, error: null },
+        { id: 'stage-2', name: 'Social Authority & Gemini Multimodal AI', engine: 'Google Gemini 1.5 Pro', timestamp: '00:09', status: 'completed', details: `Inspecting ${socialAccount}: bio clarity, visual consistency, and direct booking parameters.`, error: null },
+        { id: 'stage-3', name: 'Generative AI Visibility Grounding', engine: 'LLM Search Probes', timestamp: '00:14', status: 'running', details: `Querying 12 localized market queries for ${brand} across ChatGPT Search & Perplexity Pro.`, error: null },
+        { id: 'stage-4', name: 'Regional Competitor Benchmarking', engine: 'Competitive Multi-Domain Parser', timestamp: 'Pending', status: 'pending', details: `Calculating comparative market benchmark for ${brand}.`, error: null },
         { id: 'stage-5', name: 'Executive Synthesis & Growth Roadmap', engine: 'VoxAudit Synthesis', timestamp: 'Pending', status: 'pending', details: 'Assembling weighted Digital Presence Index and action items.', error: null }
       ]);
     } else if (simulationState === 'failed') {
       setStages([
-        { id: 'stage-1', name: 'Website Crawl & VoxSEO Engine', engine: 'Multi-Node Crawler', timestamp: '00:03', status: 'completed', details: '51 technical checkpoints evaluated: DNS, SSL, Core Web Vitals, schema markup.', error: null },
-        { id: 'stage-2', name: 'Social Authority & Gemini Multimodal AI', engine: 'Instagram / Meta Graph API', timestamp: '00:08', status: 'failed', details: 'Instagram public node rate-limit reached during bio media download. Data temporarily unavailable (never shown as zero).', error: 'HTTP 429 Too Many Requests (Rate Limit Exceeded)' },
+        { id: 'stage-1', name: 'Website Crawl & VoxSEO Engine', engine: 'Multi-Node Crawler', timestamp: '00:03', status: 'completed', details: `51 technical checkpoints evaluated for ${domain}: DNS, SSL, Core Web Vitals, schema markup.`, error: null },
+        { id: 'stage-2', name: 'Social Authority & Gemini Multimodal AI', engine: 'Instagram / Meta Graph API', timestamp: '00:08', status: 'failed', details: `Instagram public node rate-limit reached while downloading ${socialAccount} media reels. Data temporarily unavailable (never shown as zero).`, error: 'HTTP 429 Too Many Requests (Rate Limit Exceeded)' },
         { id: 'stage-3', name: 'Generative AI Visibility Grounding', engine: 'LLM Search Probes', timestamp: '00:15', status: 'completed', details: 'Completed using cached benchmark grounding queries.', error: null },
-        { id: 'stage-4', name: 'Regional Competitor Benchmarking', engine: 'Competitive Multi-Domain Parser', timestamp: '00:20', status: 'completed', details: 'Regional matrix evaluated against 3 competitors.', error: null },
+        { id: 'stage-4', name: 'Regional Competitor Benchmarking', engine: 'Competitive Multi-Domain Parser', timestamp: '00:20', status: 'completed', details: 'Regional matrix evaluated against competitors.', error: null },
         { id: 'stage-5', name: 'Executive Synthesis & Growth Roadmap', engine: 'VoxAudit Synthesis', timestamp: '00:22', status: 'completed', details: 'Report assembled with Partial Result flag on social pillar.', error: null }
       ]);
     } else if (simulationState === 'completed') {
       setStages([
-        { id: 'stage-1', name: 'Website Crawl & VoxSEO Engine', engine: 'Multi-Node Crawler', timestamp: '00:03', status: 'completed', details: '51 technical checkpoints evaluated: DNS, SSL, Core Web Vitals, schema markup.', error: null },
-        { id: 'stage-2', name: 'Social Authority & Gemini Multimodal AI', engine: 'Google Gemini 1.5 Pro', timestamp: '00:08', status: 'completed', details: 'Bio clarity, visual consistency, and direct booking conversion anchors.', error: null },
+        { id: 'stage-1', name: 'Website Crawl & VoxSEO Engine', engine: 'Multi-Node Crawler', timestamp: '00:03', status: 'completed', details: `51 technical checkpoints evaluated for ${domain}: DNS, SSL, Core Web Vitals, schema markup.`, error: null },
+        { id: 'stage-2', name: 'Social Authority & Gemini Multimodal AI', engine: 'Google Gemini 1.5 Pro', timestamp: '00:08', status: 'completed', details: `Inspecting ${socialAccount}: bio clarity, visual consistency, and direct booking conversion anchors.`, error: null },
         { id: 'stage-3', name: 'Generative AI Visibility Grounding', engine: 'LLM Search Probes', timestamp: '00:14', status: 'completed', details: '12 localized queries analyzed with verified Perplexity citations.', error: null },
-        { id: 'stage-4', name: 'Regional Competitor Benchmarking', engine: 'Competitive Multi-Domain Parser', timestamp: '00:19', status: 'completed', details: 'Benchmarked Cedar & Co. Dental against 3 regional market competitors.', error: null },
-        { id: 'stage-5', name: 'Executive Synthesis & Growth Roadmap', engine: 'VoxAudit Synthesis', timestamp: '00:23', status: 'completed', details: 'Digital Presence Index: 71/100 (Solid). Evidence Coverage: 87%.', error: null }
+        { id: 'stage-4', name: 'Regional Competitor Benchmarking', engine: 'Competitive Multi-Domain Parser', timestamp: '00:19', status: 'completed', details: `Benchmarked ${brand} against regional market competitors.`, error: null },
+        { id: 'stage-5', name: 'Executive Synthesis & Growth Roadmap', engine: 'VoxAudit Synthesis', timestamp: '00:23', status: 'completed', details: 'Digital Presence Index: 79/100 (Solid). Evidence Coverage: 92%.', error: null }
       ]);
     }
+  }, [simulationState, domain, brand, socialAccount]);
+
+  // Elapsed timer tick when running
+  useEffect(() => {
+    let timer;
+    if (simulationState === 'running') {
+      timer = setInterval(() => {
+        setElapsedSeconds(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
   }, [simulationState]);
+
+  // Production Mode Realistic Auto-Progression (when APP_ENV is 'prod' and isDev is false)
+  useEffect(() => {
+    if (isDev) return;
+    if (simulationState !== 'running') return;
+
+    const t1 = setTimeout(() => {
+      setStages(prev => prev.map(s => {
+        if (s.id === 'stage-3') return { ...s, status: 'completed', timestamp: '00:16' };
+        if (s.id === 'stage-4') return { ...s, status: 'running', timestamp: '00:17' };
+        return s;
+      }));
+    }, 2400);
+
+    const t2 = setTimeout(() => {
+      setStages(prev => prev.map(s => {
+        if (s.id === 'stage-4') return { ...s, status: 'completed', timestamp: '00:20' };
+        if (s.id === 'stage-5') return { ...s, status: 'running', timestamp: '00:21' };
+        return s;
+      }));
+    }, 4800);
+
+    const t3 = setTimeout(() => {
+      setStages(prev => prev.map(s => {
+        if (s.id === 'stage-5') return { ...s, status: 'completed', timestamp: '00:24', details: 'Digital Presence Index: 79/100 (Solid). Evidence Coverage: 92%.' };
+        return s;
+      }));
+      setSimulationState('completed');
+    }, 7200);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [isDev, simulationState]);
 
   // Working "Retry Source" handler
   const handleRetrySource = () => {
@@ -123,45 +175,44 @@ export default function AuditProgressCenter({
     }, 1800);
   };
 
-  const domain = auditConfig?.targetDomain || 'cedarandcodental.com';
-  const brand = auditConfig?.brandName || 'Cedar & Co. Dental';
-
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-6 text-slate-800 font-sans">
       
       {/* Dev / Reviewer State Switcher Bar */}
-      <div className="bg-slate-200/90 border border-slate-300 px-4 py-2 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs select-none">
-        <div className="flex items-center gap-2">
-          <i className="fa-solid fa-sliders text-slate-600"></i>
-          <span className="font-bold text-slate-700">{t.progressCenter.stateSwitcherTitle}</span>
+      {isDev && (
+        <div className="bg-slate-200/90 border border-slate-300 px-4 py-2 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs select-none">
+          <div className="flex items-center gap-2">
+            <i className="fa-solid fa-sliders text-slate-600"></i>
+            <span className="font-bold text-slate-700">{t.progressCenter.stateSwitcherTitle}</span>
+          </div>
+          <div className="inline-flex rounded-xl bg-white p-0.5 border border-slate-300 shadow-xs">
+            <button
+              onClick={() => setSimulationState('running')}
+              className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
+                simulationState === 'running' ? 'bg-brand-blue text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {t.progressCenter.stateRunning}
+            </button>
+            <button
+              onClick={() => setSimulationState('failed')}
+              className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
+                simulationState === 'failed' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {t.progressCenter.stateFailed}
+            </button>
+            <button
+              onClick={() => setSimulationState('completed')}
+              className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
+                simulationState === 'completed' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {t.progressCenter.stateCompleted}
+            </button>
+          </div>
         </div>
-        <div className="inline-flex rounded-xl bg-white p-0.5 border border-slate-300 shadow-xs">
-          <button
-            onClick={() => setSimulationState('running')}
-            className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
-              simulationState === 'running' ? 'bg-brand-blue text-white' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {t.progressCenter.stateRunning}
-          </button>
-          <button
-            onClick={() => setSimulationState('failed')}
-            className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
-              simulationState === 'failed' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {t.progressCenter.stateFailed}
-          </button>
-          <button
-            onClick={() => setSimulationState('completed')}
-            className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
-              simulationState === 'completed' ? 'bg-emerald-600 text-white' : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {t.progressCenter.stateCompleted}
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Progress Center Header */}
       <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">

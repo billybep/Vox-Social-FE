@@ -21,14 +21,18 @@ import {
 } from '../utils/sampleData';
 
 export default function DashboardSection({
+    isDev = false,
     setView,
     analysisResults,
+    setAnalysisResults,
     seoAuditData,
+    setSeoAuditData,
     userRole,
     setUserRole,
     language,
     setLanguage
 }) {
+    const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -351,6 +355,7 @@ export default function DashboardSection({
                         {/* VIEW 1: WORKSPACE DASHBOARD */}
                         {activeNav === 'dashboard' && (
                             <WorkspaceDashboard
+                                isDev={isDev}
                                 diag={diag}
                                 t={t}
                                 isRtl={isRtl}
@@ -851,6 +856,7 @@ export default function DashboardSection({
                         {/* SPRINT 2 VIEW: CREATE AUDIT WIZARD (STEPS A–E) */}
                         {activeNav === 'create_audit' && (
                             <CreateAuditWizard
+                                isDev={isDev}
                                 client={activeClient}
                                 t={t}
                                 isRtl={isRtl}
@@ -862,14 +868,119 @@ export default function DashboardSection({
                                         return updated;
                                     });
                                 }}
-                                onLaunchAudit={(auditConfig, cost = 15) => {
+                                onLaunchAudit={async (auditConfig, cost = 15) => {
                                     setWorkspaceCredits(prev => {
                                         const updated = Math.max(0, prev - cost);
                                         localStorage.setItem('vox_workspace_credits', String(updated));
                                         return updated;
                                     });
+
+                                    const cleanDomain = (auditConfig.targetDomain || 'cedarandcodental.com')
+                                        .replace(/^(https?:\/\/)?(www\.)?/, '')
+                                        .replace(/\/$/, '')
+                                        .toLowerCase();
+
+                                    // Record that an audit has been executed
+                                    localStorage.setItem('vox_has_run_audit', 'true');
+                                    localStorage.setItem('vox_last_unified_audit', JSON.stringify({
+                                        domain: cleanDomain,
+                                        brandName: auditConfig.brandName || cleanDomain,
+                                        pillars: auditConfig.pillars,
+                                        socialAccount: auditConfig.socialAccount || '',
+                                        date: new Date().toISOString().split('T')[0],
+                                        overall_score: 79,
+                                        seoScore: auditConfig.pillars?.seo ? 84 : 70,
+                                        socialScore: auditConfig.pillars?.social ? 82 : 70,
+                                        isReal: true
+                                    }));
+                                    const updatedList = getActiveClientsList();
+                                    setClientsList(updatedList);
+                                    if (updatedList[0]) setActiveClient(updatedList[0]);
                                     setLaunchedConfig(auditConfig);
                                     setActiveNav('audit_progress');
+
+                                    // 1. Run VoxSEO Engine in background if selected
+                                    if (auditConfig.pillars?.seo) {
+                                        fetch(`${API_BASE}/seo/audit`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                domain: cleanDomain,
+                                                business_name: auditConfig.brandName || ''
+                                            })
+                                        })
+                                        .then(res => res.ok ? res.json() : null)
+                                        .then(seoResult => {
+                                            if (seoResult) {
+                                                const seoData = {
+                                                    domain: cleanDomain,
+                                                    overall_score: seoResult.overall_score ?? 84,
+                                                    overall_grade: seoResult.overall_grade || 'B',
+                                                    date: new Date().toLocaleDateString(),
+                                                    fullData: seoResult
+                                                };
+                                                localStorage.setItem('vox_last_seo', JSON.stringify(seoData));
+                                                if (setSeoAuditData) setSeoAuditData(seoData);
+                                            }
+                                        })
+                                        .catch(() => {});
+                                    }
+
+                                    // 2. Run VoxSocial Engine in background if selected
+                                    if (auditConfig.pillars?.social && auditConfig.socialAccount) {
+                                        let rawSocialUrl = auditConfig.socialAccount.trim();
+                                        if (rawSocialUrl.startsWith('@')) {
+                                            rawSocialUrl = `https://instagram.com/${rawSocialUrl.slice(1)}`;
+                                        } else if (!/^https?:\/\//i.test(rawSocialUrl)) {
+                                            rawSocialUrl = `https://${rawSocialUrl}`;
+                                        }
+
+                                        fetch(`${API_BASE}/analyze`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ profile_url: rawSocialUrl })
+                                        })
+                                        .then(res => res.ok ? res.json() : null)
+                                        .then(socialResult => {
+                                            if (socialResult) {
+                                                const mappedSocial = {
+                                                    score: socialResult.overall_score || 82,
+                                                    label: socialResult.status || 'Good Presence',
+                                                    profileIdentity: socialResult.profile_identity || '',
+                                                    growthPotential: socialResult.growth_potential || '',
+                                                    summary: socialResult.profile_identity || '',
+                                                    categories: {
+                                                        businessReadiness: socialResult.profile_readiness || 80,
+                                                        profileClarity: socialResult.overall_score || 82,
+                                                        contentQuality: socialResult.overall_score || 82,
+                                                        trustScore: socialResult.overall_score || 82
+                                                    },
+                                                    strengths: socialResult.key_strengths || [],
+                                                    opportunities: socialResult.opportunities || []
+                                                };
+                                                const lastSocialData = {
+                                                    url: rawSocialUrl,
+                                                    score: mappedSocial.score,
+                                                    label: mappedSocial.label,
+                                                    platform: 'Instagram',
+                                                    date: new Date().toLocaleDateString(),
+                                                    fullData: mappedSocial
+                                                };
+                                                localStorage.setItem('vox_last_social', JSON.stringify(lastSocialData));
+                                                if (setAnalysisResults) setAnalysisResults(mappedSocial);
+                                            }
+                                        })
+                                        .catch(() => {});
+                                    }
+
+                                    // 3. Forward unified payload to /audits/run if endpoint available
+                                    try {
+                                        fetch(`${API_BASE}/audits/run`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(auditConfig)
+                                        }).catch(() => {});
+                                    } catch (e) {}
                                 }}
                                 onCancel={() => setActiveNav('dashboard')}
                             />
@@ -878,10 +989,17 @@ export default function DashboardSection({
                         {/* SPRINT 2 VIEW: AUDIT PROGRESS CENTER */}
                         {activeNav === 'audit_progress' && (
                             <AuditProgressCenter
+                                isDev={isDev}
                                 auditConfig={launchedConfig || { client: activeClient }}
                                 t={t}
                                 isRtl={isRtl}
-                                onOpenOverview={() => setActiveNav('intelligence_overview')}
+                                onOpenOverview={() => {
+                                    localStorage.setItem('vox_has_run_audit', 'true');
+                                    const updatedList = getActiveClientsList();
+                                    setClientsList(updatedList);
+                                    if (updatedList[0]) setActiveClient(updatedList[0]);
+                                    setActiveNav('intelligence_overview');
+                                }}
                             />
                         )}
 
