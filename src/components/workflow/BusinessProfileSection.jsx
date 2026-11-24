@@ -258,26 +258,16 @@ export default function BusinessProfileSection({
 
       {/* Onboarding Banner for Draft Profile */}
       {profile.isDraft && (
-        <div className="p-4 sm:p-5 rounded-2xl bg-cyan-50/80 border border-cyan-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs text-cyan-950 animate-fade-in shadow-xs">
-          <div className="flex items-start sm:items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-700 flex items-center justify-center shrink-0 text-base mt-0.5 sm:mt-0">
-              <i className="fa-solid fa-sparkles"></i>
-            </div>
-            <div>
-              <p className="font-bold text-slate-900 text-sm">Welcome to your Workspace Business Profile</p>
-              <p className="text-slate-600 text-xs">
-                Enter your company website and social handles below to personalize audit intelligence, or load sample demo data to explore.
-              </p>
-            </div>
+        <div className="p-4 sm:p-5 rounded-2xl bg-cyan-50/80 border border-cyan-200 flex items-center gap-3 text-xs text-cyan-950 animate-fade-in shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-700 flex items-center justify-center shrink-0 text-base">
+            <i className="fa-solid fa-sparkles"></i>
           </div>
-          <button
-            type="button"
-            onClick={loadSampleDemo}
-            className="px-4 py-2 rounded-xl bg-white hover:bg-cyan-100/60 border border-cyan-300 text-cyan-800 font-bold transition-colors shrink-0 shadow-xs flex items-center gap-2 self-start sm:self-auto"
-          >
-            <i className="fa-solid fa-flask text-xs"></i>
-            <span>Load Demo Client (Cedar & Co.)</span>
-          </button>
+          <div>
+            <p className="font-bold text-slate-900 text-sm">Welcome to your Workspace Business Profile</p>
+            <p className="text-slate-600 text-xs">
+              Enter your company website and social handles below to personalize audit intelligence.
+            </p>
+          </div>
         </div>
       )}
 
