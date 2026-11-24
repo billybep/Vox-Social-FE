@@ -14,7 +14,22 @@ function App() {
     const [profileUrl, setProfileUrl] = useState('');
     const [inputError, setInputError] = useState('');
     const [analyzingStep, setAnalyzingStep] = useState(0);
-    const [analysisResults, setAnalysisResults] = useState(null);
+    const [analysisResults, setAnalysisResults] = useState(() => {
+        try {
+            const raw = localStorage.getItem('vox_last_social');
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    });
+    const [seoAuditData, setSeoAuditData] = useState(() => {
+        try {
+            const raw = localStorage.getItem('vox_last_seo');
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+            return null;
+        }
+    });
 
     const [isAiComplete, setIsAiComplete] = useState(false);
     const [isFormSubmitted, setIsFormSubmitted] = useState(false);
@@ -243,6 +258,7 @@ function App() {
                     <DashboardSection
                         setView={setView}
                         analysisResults={analysisResults}
+                        seoAuditData={seoAuditData}
                         userRole={userRole}
                         setUserRole={setUserRole}
                         language={language}
@@ -262,7 +278,10 @@ function App() {
                 )}
 
                 {view === 'seo_audit' && (
-                    <SeoAuditSection setView={setView} />
+                    <SeoAuditSection
+                        setView={setView}
+                        onAuditComplete={(data) => setSeoAuditData(data)}
+                    />
                 )}
 
                 {view === 'loading' && (

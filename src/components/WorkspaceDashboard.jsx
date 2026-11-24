@@ -36,11 +36,11 @@ export default function WorkspaceDashboard({
     <div className="w-full bg-[#F8FAFC] text-slate-800 min-h-full pb-16 font-sans">
       
       {/* Dev / Reviewer State Switcher Bar */}
-      <div className="bg-slate-200/80 border-b border-slate-300 px-6 py-2 flex items-center justify-between text-xs select-none">
+      <div className="bg-slate-200/80 border-b border-slate-300 px-4 sm:px-6 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs select-none">
         <div className="flex items-center gap-2 text-slate-700">
           <i className="fa-solid fa-sliders text-slate-500"></i>
           <span className="font-bold">Sprint 1 Review Switcher:</span>
-          <span className="text-slate-500">Toggle between First-Run Empty State and Populated Multi-Location State</span>
+          <span className="text-slate-500 hidden sm:inline">Toggle between First-Run Empty State and Populated Multi-Location State</span>
         </div>
 
         <div className="inline-flex rounded-lg bg-white p-0.5 border border-slate-300 shadow-xs">
@@ -171,7 +171,7 @@ export default function WorkspaceDashboard({
               </div>
 
               {/* Dual Location Filter Pills */}
-              <div className="flex items-center gap-2 self-start md:self-auto bg-white p-1 rounded-xl border border-slate-200 shadow-xs">
+              <div className="flex items-center gap-1.5 self-start sm:self-auto bg-white p-1 rounded-xl border border-slate-200 shadow-xs overflow-x-auto max-w-full">
                 <span className="text-[11px] font-semibold text-slate-400 ps-2 pe-1">
                   <i className="fa-solid fa-location-dot me-1"></i> Locations:
                 </span>
@@ -351,13 +351,13 @@ export default function WorkspaceDashboard({
                   <div key={idx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2 font-bold text-slate-800">
-                        <span>{comp.name}</span>
+                        <span>{comp.isSelf ? diag.client.name : comp.name}</span>
                         {comp.isSelf && (
                           <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-100 text-brand-blue uppercase">
                             Target
                           </span>
                         )}
-                        <span className="text-slate-400 font-normal">· {comp.note}</span>
+                        <span className="text-slate-400 font-normal">· {comp.isSelf ? diag.domain : comp.note}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <EvidenceTag type={comp.evidenceType} />
@@ -399,7 +399,7 @@ export default function WorkspaceDashboard({
               </div>
 
               <div className="divide-y divide-slate-100">
-                {auditData.highPriorityFindings.map((finding) => (
+                {(diag.customFindings || auditData.highPriorityFindings).map((finding) => (
                   <div key={finding.id} className="py-4 first:pt-2 last:pb-0 space-y-2">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <div className="flex items-center gap-2 flex-wrap">

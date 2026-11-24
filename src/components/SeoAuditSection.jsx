@@ -8,7 +8,7 @@ const LOGO_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/ma
 const MASCOT_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/main/assets/ryanvox.png";
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1';
 
-export default function SeoAuditSection({ setView }) {
+export default function SeoAuditSection({ setView, onAuditComplete }) {
     const mascotRef = useRef(null);
     const [domain, setDomain] = useState('');
     const [businessName, setBusinessName] = useState('');
@@ -209,9 +209,13 @@ export default function SeoAuditSection({ setView }) {
                     domain: cleanDomain,
                     overall_score: data.overall_score ?? 78,
                     overall_grade: data.overall_grade || 'C',
-                    date: new Date().toLocaleDateString()
+                    date: new Date().toLocaleDateString(),
+                    fullData: data
                 };
                 localStorage.setItem('vox_last_seo', JSON.stringify(lastSeoData));
+                if (onAuditComplete) {
+                    onAuditComplete(lastSeoData);
+                }
             } catch (e) {
                 console.warn('Failed to save last SEO audit to localStorage:', e);
             }
