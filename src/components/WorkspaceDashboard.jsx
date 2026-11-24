@@ -16,6 +16,7 @@ const MASCOT_URL = "https://raw.githubusercontent.com/lengkongandreuw/voxsocial/
  * - Empty State (First-run welcome with Ryan Vox mascot and gradient CTA)
  */
 export default function WorkspaceDashboard({
+  isDev = false,
   diag,
   t,
   isRtl,
@@ -26,7 +27,29 @@ export default function WorkspaceDashboard({
   onOpenJourney,
   onOpenReport
 }) {
-  const [dashboardMode, setDashboardMode] = useState('populated'); // 'populated' | 'empty'
+  // Detect if any audit or scan has been run
+  const hasAuditedData = Boolean(
+    diag?.isRealScore ||
+    diag?.hasRealSeo ||
+    diag?.hasRealSocial ||
+    localStorage.getItem('vox_has_run_audit') === 'true' ||
+    localStorage.getItem('vox_last_seo') ||
+    localStorage.getItem('vox_last_social') ||
+    localStorage.getItem('vox_last_unified_audit')
+  );
+
+  // Default to 'empty' upon initial login when no audit has run; 'populated' once an audit has run
+  const [dashboardMode, setDashboardMode] = useState(() => {
+    return hasAuditedData ? 'populated' : 'empty';
+  });
+
+  // Automatically switch to populated state when an audit run is detected
+  React.useEffect(() => {
+    if (hasAuditedData) {
+      setDashboardMode('populated');
+    }
+  }, [hasAuditedData, diag?.isRealScore]);
+
   const [activeLocationFilter, setActiveLocationFilter] = useState('all'); // 'all' | 'amman' | 'fairfax'
 
   const auditData = SAMPLE_AUDIT_DATA;
@@ -36,36 +59,38 @@ export default function WorkspaceDashboard({
     <div className="w-full bg-[#F8FAFC] text-slate-800 min-h-full pb-16 font-sans">
       
       {/* Dev / Reviewer State Switcher Bar */}
-      <div className="bg-slate-200/80 border-b border-slate-300 px-4 sm:px-6 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs select-none">
-        <div className="flex items-center gap-2 text-slate-700">
-          <i className="fa-solid fa-sliders text-slate-500"></i>
-          <span className="font-bold">Sprint 1 Review Switcher:</span>
-          <span className="text-slate-500 hidden sm:inline">Toggle between First-Run Empty State and Populated Multi-Location State</span>
-        </div>
+      {isDev && (
+        <div className="bg-slate-200/80 border-b border-slate-300 px-4 sm:px-6 py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs select-none">
+          <div className="flex items-center gap-2 text-slate-700">
+            <i className="fa-solid fa-sliders text-slate-500"></i>
+            <span className="font-bold">Sprint 1 Review Switcher:</span>
+            <span className="text-slate-500 hidden sm:inline">Toggle between First-Run Empty State and Populated Multi-Location State</span>
+          </div>
 
-        <div className="inline-flex rounded-lg bg-white p-0.5 border border-slate-300 shadow-xs">
-          <button
-            onClick={() => setDashboardMode('populated')}
-            className={`px-3 py-1 rounded-md font-semibold text-xs transition-all ${
-              isPopulated
-                ? 'bg-brand-blue text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {t.dashboard.viewMode.populated}
-          </button>
-          <button
-            onClick={() => setDashboardMode('empty')}
-            className={`px-3 py-1 rounded-md font-semibold text-xs transition-all ${
-              !isPopulated
-                ? 'bg-brand-blue text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            {t.dashboard.viewMode.empty}
-          </button>
+          <div className="inline-flex rounded-lg bg-white p-0.5 border border-slate-300 shadow-xs">
+            <button
+              onClick={() => setDashboardMode('populated')}
+              className={`px-3 py-1 rounded-md font-semibold text-xs transition-all ${
+                isPopulated
+                  ? 'bg-brand-blue text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {t.dashboard.viewMode.populated}
+            </button>
+            <button
+              onClick={() => setDashboardMode('empty')}
+              className={`px-3 py-1 rounded-md font-semibold text-xs transition-all ${
+                !isPopulated
+                  ? 'bg-brand-blue text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              {t.dashboard.viewMode.empty}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8">
 

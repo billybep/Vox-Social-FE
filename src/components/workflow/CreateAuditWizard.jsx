@@ -74,6 +74,7 @@ const PILLAR_ITEMS = [
  * - Step E: Review, Credit Estimation & Launch with balance deduction
  */
 export default function CreateAuditWizard({
+  isDev = false,
   client,
   t,
   isRtl,
@@ -101,6 +102,7 @@ export default function CreateAuditWizard({
       cro: false // Disabled for Sprint 2 (Scheduled for Sprint 3 & 4)
     },
     targetDomain: client?.domain || 'cedarandcodental.com',
+    socialAccount: client?.socials?.instagram || client?.socialUrl || (client?.domain ? `https://instagram.com/${client.domain.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_]/g, '')}` : 'https://instagram.com/cedarandcodental'),
     brandName: client?.name || 'Cedar & Co. Dental',
     languages: {
       en: true,
@@ -258,23 +260,25 @@ export default function CreateAuditWizard({
     <div className="max-w-4xl mx-auto px-4 sm:px-8 py-8 space-y-6 text-slate-800 font-sans">
       
       {/* Dev / Reviewer Insufficient Credit State Switcher */}
-      <div className="bg-slate-200/90 border border-slate-300 px-4 py-2 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs select-none">
-        <div className="flex items-center gap-2">
-          <i className="fa-solid fa-sliders text-slate-600"></i>
-          <span className="font-bold text-slate-700">Sprint 2 Credit State Tester:</span>
-          <span className="text-slate-500">Toggle insufficient credits state (10 vs {workspaceCredits} credits)</span>
+      {isDev && (
+        <div className="bg-slate-200/90 border border-slate-300 px-4 py-2 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs select-none">
+          <div className="flex items-center gap-2">
+            <i className="fa-solid fa-sliders text-slate-600"></i>
+            <span className="font-bold text-slate-700">Sprint 2 Credit State Tester:</span>
+            <span className="text-slate-500">Toggle insufficient credits state (10 vs {workspaceCredits} credits)</span>
+          </div>
+          <button
+            onClick={() => setSimulateInsufficientCredits(!simulateInsufficientCredits)}
+            className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
+              simulateInsufficientCredits
+                ? 'bg-red-600 text-white'
+                : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+            }`}
+          >
+            {simulateInsufficientCredits ? '⚠️ Simulating Insufficient Credits (10/15)' : `✓ Sufficient Balance (${workspaceCredits} Credits)`}
+          </button>
         </div>
-        <button
-          onClick={() => setSimulateInsufficientCredits(!simulateInsufficientCredits)}
-          className={`px-3 py-1 rounded-lg font-bold text-xs transition-colors ${
-            simulateInsufficientCredits
-              ? 'bg-red-600 text-white'
-              : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
-          }`}
-        >
-          {simulateInsufficientCredits ? '⚠️ Simulating Insufficient Credits (10/15)' : `✓ Sufficient Balance (${workspaceCredits} Credits)`}
-        </button>
-      </div>
+      )}
 
       {/* Wizard Header & Steps Progress */}
       <div className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4">
@@ -488,8 +492,39 @@ export default function CreateAuditWizard({
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl ps-9 pe-3.5 py-2.5 font-mono text-slate-900 font-semibold focus:border-brand-blue focus:outline-none text-start text-xs"
               />
             </div>
-            <p className="text-[11px] text-slate-400">The primary domain crawl entrypoint inspected across SEO, citations, and journey funnel.</p>
+            <p className="text-[11px] text-slate-400">The primary domain crawl entrypoint inspected across SEO, citations, and technical health.</p>
           </div>
+
+          {/* Conditional Social Account Input (Appears when VoxSocial Engine is selected in Step A) */}
+          {config.pillars.social && (
+            <div className="space-y-1.5 pt-1 animate-fade-in">
+              <div className="flex items-center justify-between">
+                <label className="block font-bold text-slate-700">
+                  Social Media Profile / Handle <span className="text-fuchsia-600 font-semibold">(VoxSocial Engine)</span>
+                </label>
+                <span className="text-[10px] font-mono font-bold uppercase text-fuchsia-600 bg-fuchsia-50 border border-fuchsia-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <i className="fa-brands fa-instagram text-[10px]"></i>
+                  <span>Gemini AI Multimodal</span>
+                </span>
+              </div>
+              <div className="relative">
+                <span className="absolute start-3.5 top-1/2 -translate-y-1/2 text-fuchsia-500 text-xs">
+                  <i className="fa-brands fa-instagram"></i>
+                </span>
+                <input
+                  type="text"
+                  dir="ltr"
+                  value={config.socialAccount}
+                  onChange={(e) => setConfig({ ...config, socialAccount: e.target.value })}
+                  placeholder="https://instagram.com/yourhandle or @yourhandle"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl ps-9 pe-3.5 py-2.5 font-mono text-slate-900 font-semibold focus:border-fuchsia-500 focus:outline-none text-start text-xs"
+                />
+              </div>
+              <p className="text-[11px] text-slate-400">
+                Instagram or Facebook profile inspected for brand voice, visual clarity, hook retention, and booking conversions.
+              </p>
+            </div>
+          )}
 
           {/* Report Language Output */}
           <div className="pt-2 space-y-2">
@@ -814,12 +849,20 @@ export default function CreateAuditWizard({
               </button>
             </div>
 
-            {/* Block 2: Target & Language (Location Scope Omitted) */}
+            {/* Block 2: Target & Language (with Social Profile if active) */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">Target & Languages</span>
-                <strong className="text-slate-900 font-mono text-xs">{config.targetDomain}</strong>
-                <p className="text-[11px] text-slate-500">
+                <span className="text-[10px] font-mono font-bold uppercase text-slate-400 block">Target & Social Profiles</span>
+                <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                  <strong className="text-slate-900 font-mono text-xs">{config.targetDomain}</strong>
+                  {config.pillars.social && config.socialAccount && (
+                    <span className="text-fuchsia-700 font-mono text-[11px] bg-fuchsia-50 px-2 py-0.5 rounded border border-fuchsia-200 flex items-center gap-1">
+                      <i className="fa-brands fa-instagram text-[10px]"></i>
+                      <span>{config.socialAccount}</span>
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">
                   Languages: {config.languages.en ? 'English ' : ''}{config.languages.ar ? 'Arabic' : ''}
                 </p>
               </div>

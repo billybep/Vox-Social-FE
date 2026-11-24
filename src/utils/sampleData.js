@@ -202,29 +202,32 @@ export const SAMPLE_AUDIT_DATA = {
   ]
 };
 
-// Check for live scan snapshots from SEOptimer and Gemini
+// Check for live scan snapshots from SEOptimer, Gemini, or Unified Audit Wizard
 export function getStoredRealScans() {
   let realSeo = null;
   let realSocial = null;
+  let realUnified = null;
   try {
     const sSeo = localStorage.getItem('vox_last_seo');
     const sSocial = localStorage.getItem('vox_last_social');
+    const sUnified = localStorage.getItem('vox_last_unified_audit');
     if (sSeo) realSeo = JSON.parse(sSeo);
     if (sSocial) realSocial = JSON.parse(sSocial);
+    if (sUnified) realUnified = JSON.parse(sUnified);
   } catch (e) {
     // ignore parse error
   }
-  return { realSeo, realSocial };
+  return { realSeo, realSocial, realUnified };
 }
 
 // Compute active clients list dynamically (auto-inserting verified real scan if present)
 export function getActiveClientsList() {
-  const { realSeo, realSocial } = getStoredRealScans();
+  const { realSeo, realSocial, realUnified } = getStoredRealScans();
   const list = [...SAMPLE_CLIENTS];
 
-  if (realSeo || realSocial) {
-    let domain = 'verified-client.com';
-    let brandName = 'Verified Business';
+  if (realSeo || realSocial || realUnified) {
+    let domain = realUnified?.domain || 'verified-client.com';
+    let brandName = realUnified?.brandName || 'Verified Business';
 
     if (realSeo?.domain) {
       domain = realSeo.domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
@@ -241,10 +244,13 @@ export function getActiveClientsList() {
         brandName = (realSocial.url.split('/')[1] || realSocial.url).toUpperCase();
         domain = 'social-audit.com';
       }
+    } else if (realUnified?.domain) {
+      domain = realUnified.domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+      brandName = realUnified.brandName || domain.replace(/^www\./, '').split('.')[0].toUpperCase();
     }
 
-    const seoScore = realSeo?.overall_score ?? realSeo?.summary?.score ?? (realSocial ? 75 : 85);
-    const socialScore = realSocial?.score ?? realSocial?.overallScore ?? realSocial?.categories?.businessReadiness ?? (realSeo ? 78 : 82);
+    const seoScore = realSeo?.overall_score ?? realSeo?.summary?.score ?? (realUnified?.seoScore ?? 84);
+    const socialScore = realSocial?.score ?? realSocial?.overallScore ?? realSocial?.categories?.businessReadiness ?? (realUnified?.socialScore ?? 82);
     const overallScore = Math.round((seoScore * 0.55) + (socialScore * 0.45));
 
     const realClient = {
@@ -253,7 +259,7 @@ export function getActiveClientsList() {
       domain: domain,
       industry: realSocial?.fullData?.profileIdentity || "Audited Entity",
       locations: [{ name: "Primary Location", country: "Global", city: "Online", isPrimary: true }],
-      lastAudit: realSeo?.date || realSocial?.date || new Date().toISOString().split('T')[0],
+      lastAudit: realSeo?.date || realSocial?.date || realUnified?.date || new Date().toISOString().split('T')[0],
       isReal: true,
       overallScore: overallScore,
       evidenceCoverage: 96,
@@ -269,16 +275,18 @@ export function getActiveClientsList() {
 }
 
 export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSocial = null) {
-  const { realSeo: storedSeo, realSocial: storedSocial } = getStoredRealScans();
+  const { realSeo: storedSeo, realSocial: storedSocial, realUnified: storedUnified } = getStoredRealScans();
   const effectiveSeo = runtimeSeo || storedSeo;
   const effectiveSocial = runtimeSocial || storedSocial;
+  const effectiveUnified = storedUnified;
 
   const hasRealSeo = !!effectiveSeo && (activeClient?.isReal || (!activeClient?.isReal && effectiveSeo));
   const hasRealSocial = !!effectiveSocial && (activeClient?.isReal || (!activeClient?.isReal && effectiveSocial));
-  const isRealScore = hasRealSeo || hasRealSocial || !!activeClient?.isReal;
+  const hasRealUnified = !!effectiveUnified && (activeClient?.isReal || (!activeClient?.isReal && effectiveUnified));
+  const isRealScore = hasRealSeo || hasRealSocial || hasRealUnified || !!activeClient?.isReal;
 
-  const seoScore = hasRealSeo ? (effectiveSeo?.overall_score ?? effectiveSeo?.summary?.score ?? 85) : (activeClient?.seoScore || 78);
-  const socialScore = hasRealSocial ? (effectiveSocial?.score ?? effectiveSocial?.overallScore ?? 82) : (activeClient?.socialScore || 82);
+  const seoScore = hasRealSeo ? (effectiveSeo?.overall_score ?? effectiveSeo?.summary?.score ?? 85) : (activeClient?.seoScore || (effectiveUnified?.seoScore ?? 78));
+  const socialScore = hasRealSocial ? (effectiveSocial?.score ?? effectiveSocial?.overallScore ?? 82) : (activeClient?.socialScore || (effectiveUnified?.socialScore ?? 82));
   const overallScore = isRealScore ? Math.round((seoScore * 0.55) + (socialScore * 0.45)) : (activeClient?.overallScore || 71);
 
   // Dynamic real findings when real scan data exists
@@ -313,6 +321,20 @@ export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSoc
         date: effectiveSocial?.date || new Date().toLocaleDateString(),
         description: opportunities[0] || "Bio clarity, visual identity, and customer conversion pathways analyzed by Gemini multimodal AI.",
         recommendation: strengths[0] ? `Maintain strength: ${strengths[0]}` : "Optimize bio call-to-action to increase direct visitor conversion."
+      });
+    }
+    if (hasRealUnified && !hasRealSeo && !hasRealSocial) {
+      customFindings.push({
+        id: 'real-unified-1',
+        title: `Growth Intelligence Audit Run Completed for ${effectiveUnified?.domain || activeClient?.domain}`,
+        category: "Growth Intelligence",
+        severity: "watch",
+        impact: `Overall Index: ${overallScore}/100 (Live Audit Verification)`,
+        evidenceType: "measured",
+        source: "Unified Multi-Node Scanner",
+        date: effectiveUnified?.date || new Date().toLocaleDateString(),
+        description: `Automated audit inspected target domain health, brand social prominence, and generative AI search grounding.`,
+        recommendation: "Review individual diagnostic cards to address verified high-priority recommendations."
       });
     }
     // Fill remaining findings from sample to maintain 4-card matrix
