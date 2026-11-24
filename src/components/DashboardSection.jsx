@@ -43,6 +43,10 @@ export default function DashboardSection({
     const [searchQuery, setSearchQuery] = useState('');
     const [showSearchModal, setShowSearchModal] = useState(false);
     const [launchedConfig, setLaunchedConfig] = useState(null);
+    const [workspaceCredits, setWorkspaceCredits] = useState(() => {
+        const saved = localStorage.getItem('vox_workspace_credits');
+        return saved !== null ? parseInt(saved, 10) : 50;
+    });
 
     // Active Role and Language state with defaults
     const currentRole = userRole || 'agency_owner';
@@ -252,6 +256,16 @@ export default function DashboardSection({
                                 <i className="fa-regular fa-bell"></i>
                                 <span className="absolute top-2 end-2 w-1.5 h-1.5 rounded-full bg-[#00e5ff]"></span>
                             </button>
+
+                            {/* Workspace Credits Pill */}
+                            <div
+                                className="h-9 px-2.5 sm:px-3 rounded-xl bg-[#121422] border border-[#1E2235] text-xs font-mono font-bold text-white flex items-center gap-1.5 shadow-xs shrink-0"
+                                title="Available Workspace Credits"
+                            >
+                                <i className="fa-solid fa-coins text-amber-400 text-xs"></i>
+                                <span>{workspaceCredits}</span>
+                                <span className="hidden sm:inline text-[10px] text-slate-400 font-sans font-medium">Credits</span>
+                            </div>
 
                             {/* Instant EN / AR Language Switcher */}
                             <button
@@ -828,7 +842,20 @@ export default function DashboardSection({
                                 client={activeClient}
                                 t={t}
                                 isRtl={isRtl}
-                                onLaunchAudit={(auditConfig) => {
+                                workspaceCredits={workspaceCredits}
+                                onDeductCredits={(cost) => {
+                                    setWorkspaceCredits(prev => {
+                                        const updated = Math.max(0, prev - cost);
+                                        localStorage.setItem('vox_workspace_credits', String(updated));
+                                        return updated;
+                                    });
+                                }}
+                                onLaunchAudit={(auditConfig, cost = 15) => {
+                                    setWorkspaceCredits(prev => {
+                                        const updated = Math.max(0, prev - cost);
+                                        localStorage.setItem('vox_workspace_credits', String(updated));
+                                        return updated;
+                                    });
                                     setLaunchedConfig(auditConfig);
                                     setActiveNav('audit_progress');
                                 }}

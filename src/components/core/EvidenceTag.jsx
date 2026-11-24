@@ -41,6 +41,17 @@ export default function EvidenceTag({
         </span>
       );
 
+    case 'disconnected':
+      return (
+        <span 
+          title={reason || 'Integration disconnected · OAuth pending'}
+          className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-300 select-none ${className}`}
+        >
+          <i className="fa-solid fa-plug-circle-xmark text-[10px] text-slate-500 shrink-0"></i>
+          <span>Disconnected</span>
+        </span>
+      );
+
     case 'estimated':
       return (
         <span 
