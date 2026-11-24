@@ -326,17 +326,18 @@ export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSoc
   const effectiveSocial = runtimeSocial || storedSocial;
   const effectiveUnified = storedUnified;
 
-  const hasRealSeo = !!effectiveSeo && (activeClient?.isReal || (!activeClient?.isReal && effectiveSeo));
-  const hasRealSocial = !!effectiveSocial && (activeClient?.isReal || (!activeClient?.isReal && effectiveSocial));
-  const hasRealUnified = !!effectiveUnified && (activeClient?.isReal || (!activeClient?.isReal && effectiveUnified));
-  const isRealScore = hasRealSeo || hasRealSocial || hasRealUnified || !!activeClient?.isReal;
+  const isDemoClient = activeClient?.id === 'cedar-dental' || activeClient?.id === 'nordic-apex' || activeClient?.id === 'sultan-perfumes';
+  const hasRealSeo = !!effectiveSeo;
+  const hasRealSocial = !!effectiveSocial;
+  const hasRealUnified = !!effectiveUnified;
+  const isRealScore = hasRealSeo || hasRealSocial || hasRealUnified || (!!activeClient?.isReal && !activeClient?.isDraft);
 
-  const seoScore = hasRealSeo ? (effectiveSeo?.overall_score ?? effectiveSeo?.summary?.score ?? 85) : (activeClient?.seoScore || (effectiveUnified?.seoScore ?? 78));
-  const socialScore = hasRealSocial ? (effectiveSocial?.score ?? effectiveSocial?.overallScore ?? 82) : (activeClient?.socialScore || (effectiveUnified?.socialScore ?? 82));
-  const overallScore = isRealScore ? Math.round((seoScore * 0.55) + (socialScore * 0.45)) : (activeClient?.overallScore || 71);
+  const seoScore = hasRealSeo ? (effectiveSeo?.overall_score ?? effectiveSeo?.summary?.score ?? 85) : (effectiveUnified?.seoScore ?? (isDemoClient ? (activeClient?.seoScore || 78) : 0));
+  const socialScore = hasRealSocial ? (effectiveSocial?.score ?? effectiveSocial?.overallScore ?? 82) : (effectiveUnified?.socialScore ?? (isDemoClient ? (activeClient?.socialScore || 82) : 0));
+  const overallScore = isRealScore ? Math.round((seoScore * 0.55) + (socialScore * 0.45)) : (isDemoClient ? (activeClient?.overallScore || 71) : 0);
 
   // Dynamic real findings when real scan data exists
-  let customFindings = SAMPLE_AUDIT_DATA.highPriorityFindings;
+  let customFindings = isDemoClient ? SAMPLE_AUDIT_DATA.highPriorityFindings : [];
   if (isRealScore) {
     customFindings = [];
     if (hasRealSeo) {
@@ -383,24 +384,31 @@ export function getClientDiagnostics(activeClient, runtimeSeo = null, runtimeSoc
         recommendation: "Review individual diagnostic cards to address verified high-priority recommendations."
       });
     }
-    // Fill remaining findings from sample to maintain 4-card matrix
-    SAMPLE_AUDIT_DATA.highPriorityFindings.slice(customFindings.length).forEach((f, i) => {
-      customFindings.push({ ...f, id: `hybrid-f-${i}` });
-    });
+    // If demo client, fill remaining findings from sample
+    if (isDemoClient) {
+      SAMPLE_AUDIT_DATA.highPriorityFindings.slice(customFindings.length).forEach((f, i) => {
+        customFindings.push({ ...f, id: `hybrid-f-${i}` });
+      });
+    }
   }
 
+  // Determine domain without hardcoded cedar fallback
+  const resolvedDomain = activeClient?.domain || effectiveSeo?.domain || (isDemoClient ? (activeClient?.domain || 'cedarandcodental.com') : '');
+
   return {
-    client: activeClient || SAMPLE_CLIENTS[0],
+    client: activeClient || { name: 'My Workspace', domain: '', isReal: true, isDraft: true },
     isRealScore,
+    isDemoClient,
     hasRealSeo,
     hasRealSocial,
+    hasRealUnified,
     overallScore,
     seoScore,
     socialScore,
-    aiScore: activeClient?.aiScore || 64,
-    croScore: activeClient?.croScore || 58,
-    domain: activeClient?.domain || effectiveSeo?.domain || 'cedarandcodental.com',
-    evidenceCoverage: isRealScore ? 96 : (activeClient?.evidenceCoverage || 87),
+    aiScore: isRealScore ? 78 : (isDemoClient ? (activeClient?.aiScore || 64) : 0),
+    croScore: isRealScore ? 72 : (isDemoClient ? (activeClient?.croScore || 58) : 0),
+    domain: resolvedDomain,
+    evidenceCoverage: isRealScore ? 96 : (isDemoClient ? (activeClient?.evidenceCoverage || 87) : 0),
     effectiveSeo,
     effectiveSocial,
     customFindings

@@ -7,19 +7,32 @@ import React, { useState } from 'react';
  */
 export default function SampleDataBanner({
   isReal = false,
-  targetDomain = 'cedarandcodental.com',
+  isDemo = false,
+  targetDomain = '',
   onRunAudit = null,
   t
 }) {
   const [isMinimized, setIsMinimized] = useState(false);
 
+  const bannerTitle = isReal
+    ? "LIVE AUDIT MODE ACTIVE"
+    : isDemo
+    ? "SAMPLE DATA DEMO (CEDAR & CO. DENTAL)"
+    : "WORKSPACE READY (NO AUDIT YET)";
+
+  const bannerText = isReal
+    ? `Displaying verified live audit findings for ${targetDomain || 'workspace'}. Crawler nodes verified.`
+    : isDemo
+    ? `Viewing simulated multi-location dataset for Cedar & Co. Dental (Amman & Fairfax). Real audit engine activates upon running a live scan.`
+    : `No audit run recorded yet for this workspace. Launch a growth audit to inspect SEO, social authority, and AI search presence.`;
+
   if (isMinimized) {
     return (
       <div className="w-full bg-slate-900 text-white text-[10px] font-mono px-4 py-1 flex items-center justify-between border-b border-slate-800 select-none">
         <div className="flex items-center gap-2">
-          <span className={`w-1.5 h-1.5 rounded-full ${isReal ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+          <span className={`w-1.5 h-1.5 rounded-full ${isReal ? 'bg-emerald-400' : isDemo ? 'bg-amber-400' : 'bg-blue-400'}`}></span>
           <span className="text-slate-400">
-            {isReal ? "LIVE AUDIT MODE ACTIVE" : "SAMPLE DATA PROTOTYPE (CEDAR & CO. DENTAL)"}
+            {bannerTitle}
           </span>
         </div>
         <button
@@ -40,16 +53,13 @@ export default function SampleDataBanner({
     }`}>
       <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-2.5">
-          <span className={`w-2 h-2 rounded-full shrink-0 ${isReal ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+          <span className={`w-2 h-2 rounded-full shrink-0 ${isReal ? 'bg-emerald-400 animate-pulse' : isDemo ? 'bg-amber-400' : 'bg-blue-400'}`}></span>
           <div>
             <strong className="font-mono text-[11px] uppercase tracking-wider text-white me-2">
-              {isReal ? "LIVE SCAN CONNECTED" : "PROTOTYPE SAMPLE DATA"}
+              {isReal ? "LIVE SCAN CONNECTED" : isDemo ? "PROTOTYPE SAMPLE DATA" : "WORKSPACE READY"}
             </strong>
             <span className="text-slate-400 text-[11px]">
-              {isReal
-                ? `Displaying verified live audit findings for ${targetDomain}. Crawler nodes verified.`
-                : `Viewing simulated multi-location dataset for Cedar & Co. Dental (Amman & Fairfax). Real audit engine activates upon running a live scan.`
-              }
+              {bannerText}
             </span>
           </div>
         </div>
