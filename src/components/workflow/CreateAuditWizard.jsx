@@ -133,7 +133,7 @@ export default function CreateAuditWizard({
         </div>
 
         {/* Stepper Navigation */}
-        <div className="grid grid-cols-5 gap-2 pt-2 text-center text-xs">
+        <div className="flex sm:grid sm:grid-cols-5 gap-1.5 sm:gap-2 pt-2 text-center text-xs overflow-x-auto pb-1">
           {[
             { id: 'A', label: t.createAudit.steps.scope },
             { id: 'B', label: t.createAudit.steps.target },
@@ -146,7 +146,7 @@ export default function CreateAuditWizard({
               <button
                 key={s.id}
                 onClick={() => setCurrentStep(s.id)}
-                className={`p-2 rounded-xl text-center border transition-all ${
+                className={`p-2 min-w-[68px] sm:min-w-0 flex-1 rounded-xl text-center border transition-all ${
                   isActive
                     ? 'border-brand-blue bg-blue-50/50 text-brand-blue font-bold shadow-xs'
                     : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'

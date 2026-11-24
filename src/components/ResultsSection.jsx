@@ -64,19 +64,19 @@ export default function ResultsSection({ results, url, platform, setView }) {
 
             {/* Top Result Navigation Header */}
             <nav className="border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-50">
-                <div className="max-w-[1400px] mx-auto px-6 sm:px-12 py-5 flex items-center justify-between">
-                    <div className="flex items-center gap-3 font-black text-xl cursor-pointer" onClick={() => setView('dashboard')}>
-                        <div className="w-8 h-8 rounded-full overflow-hidden flex items-center justify-center">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-12 py-3.5 sm:py-5 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 sm:gap-3 font-black text-lg sm:text-xl cursor-pointer shrink-0" onClick={() => setView('dashboard')}>
+                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full overflow-hidden flex items-center justify-center">
                             <img src={LOGO_URL} className="w-full h-full object-contain" alt="Logo" />
                         </div>
-                        VOXLUMEDIA
+                        <span className="hidden xs:inline">VOXLUMEDIA</span>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button onClick={() => setView('dashboard')} className="text-sm border border-white/20 hover:border-white bg-white/5 hover:bg-white/10 font-bold py-2.5 px-5 rounded-full transition duration-300">
-                            <i className="fa-solid fa-house mr-1.5 text-xs text-white/60"></i> Dashboard
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <button onClick={() => setView('dashboard')} className="text-xs sm:text-sm border border-white/20 hover:border-white bg-white/5 hover:bg-white/10 font-bold py-2 sm:py-2.5 px-3 sm:px-5 rounded-full transition duration-300">
+                            <i className="fa-solid fa-house mr-1 text-xs text-white/60"></i> Dashboard
                         </button>
-                        <button onClick={() => setView('landing')} className="text-sm border border-white/20 hover:border-white bg-white/5 hover:bg-white/10 font-bold py-2.5 px-6 rounded-full transition duration-300">
-                            Run New Scan &rarr;
+                        <button onClick={() => setView('landing')} className="text-xs sm:text-sm border border-white/20 hover:border-white bg-white/5 hover:bg-white/10 font-bold py-2 sm:py-2.5 px-3.5 sm:px-6 rounded-full transition duration-300">
+                            New Scan &rarr;
                         </button>
                     </div>
                 </div>

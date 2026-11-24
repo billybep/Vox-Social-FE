@@ -31,6 +31,7 @@ export default function DashboardSection({
 }) {
     const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+    const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [activeNav, setActiveNav] = useState('dashboard');
     const [clientsList, setClientsList] = useState(() => getActiveClientsList());
     const [activeClient, setActiveClient] = useState(() => {
@@ -119,43 +120,55 @@ export default function DashboardSection({
                     currentRole={currentRole}
                     isCollapsed={isSidebarCollapsed}
                     setIsCollapsed={setIsSidebarCollapsed}
+                    isMobileOpen={isMobileDrawerOpen}
+                    setIsMobileOpen={setIsMobileDrawerOpen}
                     t={t}
                     isRtl={isRtl}
                     onNewAudit={() => setActiveNav('create_audit')}
                 />
 
                 {/* 3. MAIN CONTENT CONTAINER (DARK TOPBAR + LIGHT CANVAS) */}
-                <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarCollapsed
-                    ? (isRtl ? 'me-[72px]' : 'ms-[72px]')
-                    : (isRtl ? 'me-[248px]' : 'ms-[248px]')
+                <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 pb-20 md:pb-0 ${isSidebarCollapsed
+                    ? (isRtl ? 'md:me-[72px]' : 'md:ms-[72px]')
+                    : (isRtl ? 'md:me-[248px]' : 'md:ms-[248px]')
                     }`}>
 
                     {/* TOPBAR / APP SHELL HEADER (DARK BRAND SHELL) */}
-                    <header className="sticky top-0 z-30 h-16 bg-[#0A0B10] border-b border-[#1E2235] px-4 sm:px-8 flex items-center justify-between gap-4 select-none">
+                    <header className="sticky top-0 z-30 h-16 bg-[#0A0B10] border-b border-[#1E2235] px-3 sm:px-8 flex items-center justify-between gap-2 sm:gap-4 select-none">
 
-                        {/* Left: Active Client Switcher & Workspace Location Pill */}
-                        <div className="flex items-center gap-2.5 shrink-0">
+                        {/* Left: Mobile Drawer Trigger + Active Client Switcher */}
+                        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+                            {/* Mobile Hamburger Drawer Trigger */}
+                            <button
+                                type="button"
+                                onClick={() => setIsMobileDrawerOpen(true)}
+                                className="w-9 h-9 rounded-xl bg-[#121422] hover:bg-white/5 border border-[#1E2235] text-slate-300 hover:text-white flex items-center justify-center text-sm md:hidden shrink-0"
+                                title="Open Full Navigation Menu"
+                            >
+                                <i className="fa-solid fa-bars"></i>
+                            </button>
+
                             <div className="relative">
                                 <button
                                     type="button"
                                     onClick={() => setShowClientMenu(!showClientMenu)}
-                                    className="h-9 px-3 rounded-xl bg-[#121422] hover:bg-[#181a2c] border border-[#1E2235] text-xs font-bold text-white flex items-center gap-2 transition-colors shadow-xs"
+                                    className="h-9 px-2.5 sm:px-3 rounded-xl bg-[#121422] hover:bg-[#181a2c] border border-[#1E2235] text-xs font-bold text-white flex items-center gap-1.5 sm:gap-2 transition-colors shadow-xs"
                                     title="Switch Workspace Client / View Live Scans"
                                 >
-                                    <span className={`w-2 h-2 rounded-full ${activeClient?.isReal ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
-                                    <span className="truncate max-w-[150px] sm:max-w-[210px]">
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${activeClient?.isReal ? 'bg-emerald-400' : 'bg-amber-400'}`}></span>
+                                    <span className="truncate max-w-[105px] xs:max-w-[140px] sm:max-w-[210px]">
                                         {activeClient?.name || 'Select Client'}
                                     </span>
                                     {activeClient?.isReal && (
-                                        <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                        <span className="hidden xs:inline px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                                             LIVE
                                         </span>
                                     )}
-                                    <i className="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                                    <i className="fa-solid fa-chevron-down text-[10px] text-slate-400 shrink-0"></i>
                                 </button>
 
                                 {showClientMenu && (
-                                    <div className="absolute z-50 start-0 mt-2 w-72 rounded-2xl bg-[#0F111D] border border-[#1E2235] shadow-2xl p-2 space-y-1 animate-fade-in text-start">
+                                    <div className="absolute z-50 start-0 mt-2 w-72 max-w-[90vw] rounded-2xl bg-[#0F111D] border border-[#1E2235] shadow-2xl p-2 space-y-1 animate-fade-in text-start">
                                         <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase text-slate-500 border-b border-[#1E2235] flex items-center justify-between">
                                             <span>Active Workspace Client</span>
                                             <span className="text-[9px] text-[#00e5ff] font-mono">{clientsList.length} total</span>
@@ -186,7 +199,7 @@ export default function DashboardSection({
                                                         </span>
                                                     )}
                                                 </div>
-                                                <span className="text-[10px] font-mono text-slate-400 block mt-0.5">{c.domain}</span>
+                                                <span className="text-[10px] font-mono text-slate-400 block mt-0.5 truncate">{c.domain}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -200,7 +213,7 @@ export default function DashboardSection({
                             </div>
                         </div>
 
-                        {/* Center: Global Search Bar Trigger (⌘K) */}
+                        {/* Center: Global Search Bar Trigger (Desktop) */}
                         <div className="hidden md:flex flex-1 max-w-md mx-4">
                             <button
                                 type="button"
@@ -218,12 +231,22 @@ export default function DashboardSection({
                         </div>
 
                         {/* Right: Actions, Role Switcher, Language Toggle, Profile */}
-                        <div className="flex items-center gap-2.5 shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+
+                            {/* Mobile Search Button */}
+                            <button
+                                type="button"
+                                onClick={() => setShowSearchModal(true)}
+                                className="w-9 h-9 rounded-xl bg-[#121422] hover:bg-white/5 border border-[#1E2235] text-slate-400 hover:text-white flex items-center justify-center text-xs md:hidden"
+                                title="Search (⌘K)"
+                            >
+                                <i className="fa-solid fa-magnifying-glass"></i>
+                            </button>
 
                             {/* Notifications Bell */}
                             <button
                                 type="button"
-                                className="w-9 h-9 rounded-xl bg-[#121422] hover:bg-white/5 border border-[#1E2235] text-slate-400 hover:text-white flex items-center justify-center text-xs relative transition-colors"
+                                className="hidden xs:flex w-9 h-9 rounded-xl bg-[#121422] hover:bg-white/5 border border-[#1E2235] text-slate-400 hover:text-white items-center justify-center text-xs relative transition-colors"
                                 title={t.topbar.notifications}
                             >
                                 <i className="fa-regular fa-bell"></i>
@@ -233,7 +256,7 @@ export default function DashboardSection({
                             {/* Instant EN / AR Language Switcher */}
                             <button
                                 onClick={handleLangToggle}
-                                className="h-9 px-2.5 rounded-xl bg-[#121422] hover:bg-white/5 border border-[#1E2235] text-xs font-bold text-white flex items-center gap-1.5 transition-colors"
+                                className="h-9 px-2 sm:px-2.5 rounded-xl bg-[#121422] hover:bg-white/5 border border-[#1E2235] text-xs font-bold text-white flex items-center gap-1 transition-colors"
                                 title="Switch Language (English / Arabic RTL)"
                             >
                                 <i className="fa-solid fa-globe text-[#00e5ff] text-xs"></i>
@@ -244,14 +267,14 @@ export default function DashboardSection({
                             <div className="relative">
                                 <button
                                     onClick={() => setShowRoleMenu(!showRoleMenu)}
-                                    className="h-9 px-3 rounded-xl bg-[#121422] hover:bg-[#181a2c] border border-[#1E2235] text-xs font-bold text-white flex items-center gap-2 transition-colors shadow-xs"
+                                    className="h-9 px-2.5 sm:px-3 rounded-xl bg-[#121422] hover:bg-[#181a2c] border border-[#1E2235] text-xs font-bold text-white flex items-center gap-1.5 sm:gap-2 transition-colors shadow-xs"
                                 >
-                                    <span className="w-2 h-2 rounded-full bg-[#cf41b2]"></span>
+                                    <span className="w-2 h-2 rounded-full bg-[#cf41b2] shrink-0"></span>
                                     <span className="hidden sm:inline text-slate-400 text-[11px] font-normal">Role:</span>
-                                    <span className="capitalize text-[#00e5ff] font-mono text-xs">
+                                    <span className="capitalize text-[#00e5ff] font-mono text-[11px] sm:text-xs truncate max-w-[70px] sm:max-w-none">
                                         {t.roles[currentRole] || currentRole}
                                     </span>
-                                    <i className="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                                    <i className="fa-solid fa-chevron-down text-[10px] text-slate-400 shrink-0"></i>
                                 </button>
 
                                 {showRoleMenu && (
@@ -316,10 +339,10 @@ export default function DashboardSection({
 
                         {/* VIEW 2: INTELLIGENCE OVERVIEW */}
                         {activeNav === 'intelligence_overview' && (
-                            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8 animate-fade-in">
-                                <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-4">
                                     <div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             <span className="text-xs font-mono font-bold uppercase text-slate-500">INTELLIGENCE PLATFORM</span>
                                             {!diag.isRealScore && (
                                                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
@@ -338,7 +361,7 @@ export default function DashboardSection({
                                     </div>
                                     <button
                                         onClick={() => setActiveNav('dashboard')}
-                                        className="px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-xs transition-all"
+                                        className="self-start sm:self-auto px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-xs transition-all"
                                     >
                                         ← Back to Dashboard
                                     </button>
@@ -721,10 +744,10 @@ export default function DashboardSection({
 
                         {/* VIEW 5: VOXAI VISIBILITY */}
                         {activeNav === 'intelligence_ai' && (
-                            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-8 animate-fade-in">
-                                <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+                            <div className="max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 animate-fade-in">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-4">
                                     <div>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 flex-wrap">
                                             <span className="text-xs font-mono font-bold uppercase text-[#cf41b2]">GENERATIVE DISCOVERY</span>
                                             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-amber-50 text-amber-800 border border-amber-300">
                                                 SAMPLE SIMULATION
@@ -924,6 +947,68 @@ export default function DashboardSection({
                     </div>
                 </div>
             )}
+
+            {/* Mobile Fixed Bottom Navigation Bar (as per VA-Intelligence-Design 390px spec) */}
+            <nav className="fixed bottom-0 start-0 end-0 z-30 h-16 bg-[#0A0B10]/95 backdrop-blur-md border-t border-[#1E2235] px-2 flex items-center justify-around md:hidden select-none">
+                {/* 1. Dashboard Tab */}
+                <button
+                    type="button"
+                    onClick={() => setActiveNav('dashboard')}
+                    className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-bold transition-colors ${
+                        activeNav === 'dashboard' ? 'text-[#00e5ff]' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                >
+                    <i className="fa-solid fa-chart-pie text-sm mb-1"></i>
+                    <span>Dashboard</span>
+                </button>
+
+                {/* 2. VoxSEO Tab */}
+                <button
+                    type="button"
+                    onClick={() => setActiveNav('intelligence_seo')}
+                    className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-bold transition-colors ${
+                        activeNav === 'intelligence_seo' ? 'text-[#00e5ff]' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                >
+                    <i className="fa-solid fa-magnifying-glass text-sm mb-1"></i>
+                    <span>VoxSEO</span>
+                </button>
+
+                {/* 3. Center Floating CTA: Create Audit */}
+                <button
+                    type="button"
+                    onClick={() => setActiveNav('create_audit')}
+                    className="flex flex-col items-center justify-center -mt-5 mx-1"
+                    title="Create New Growth Audit"
+                >
+                    <div className="w-12 h-12 rounded-full gradient-brand-cta flex items-center justify-center text-slate-950 shadow-lg shadow-cyan-500/25 active:scale-95 transition-transform">
+                        <i className="fa-solid fa-plus text-base font-black"></i>
+                    </div>
+                    <span className="text-[10px] font-extrabold text-[#00e5ff] mt-0.5">Audit</span>
+                </button>
+
+                {/* 4. VoxSocial Tab */}
+                <button
+                    type="button"
+                    onClick={() => setActiveNav('intelligence_social')}
+                    className={`flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-bold transition-colors ${
+                        activeNav === 'intelligence_social' ? 'text-[#00e5ff]' : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                >
+                    <i className="fa-brands fa-instagram text-sm mb-1"></i>
+                    <span>Social</span>
+                </button>
+
+                {/* 5. Menu Drawer Trigger */}
+                <button
+                    type="button"
+                    onClick={() => setIsMobileDrawerOpen(true)}
+                    className="flex flex-col items-center justify-center flex-1 py-1 text-[10px] font-bold text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                    <i className="fa-solid fa-bars text-sm mb-1"></i>
+                    <span>Menu</span>
+                </button>
+            </nav>
 
             {/* Logout Confirmation Modal */}
             <LogoutModal
